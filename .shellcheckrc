@@ -1,0 +1,4 @@
+# Allow sourcing from paths determined at runtime
+disable=SC1090
+# Allow using $'...' for escape sequences
+disable=SC1003

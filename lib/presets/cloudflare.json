@@ -1,0 +1,19 @@
+{
+  "name": "cloudflare",
+  "description": "Cloudflare AI Gateway (transparent Anthropic proxy)",
+  "env": {
+    "ANTHROPIC_MODEL": "claude-sonnet-4-6",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-6",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5"
+  },
+  "permissions_allow": [
+    "mcp__tavily__tavily_search",
+    "mcp__tavily__tavily_research",
+    "mcp__duckduckgo__search"
+  ],
+  "permissions_deny": [],
+  "required_config": [
+    "auth_token"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "databricks",
+  "description": "Databricks Model Serving with Claude models",
+  "env": {
+    "ANTHROPIC_MODEL": "databricks-claude-opus-4-6",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "databricks-claude-opus-4-6",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "databricks-claude-sonnet-4-6",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "databricks-claude-haiku-4-5",
+    "ANTHROPIC_CUSTOM_HEADERS": "x-databricks-use-coding-agent-mode: true",
+    "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1"
+  },
+  "permissions_allow": [
+    "mcp__tavily__tavily_search",
+    "mcp__tavily__tavily_research",
+    "mcp__duckduckgo__search"
+  ],
+  "permissions_deny": [
+    "WebSearch",
+    "WebFetch"
+  ],
+  "required_config": [
+    "base_url",
+    "auth_token"
+  ]
+}
