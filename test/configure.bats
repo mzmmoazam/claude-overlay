@@ -115,7 +115,7 @@ assert d['mcp_servers'] == {}, 'mcp_servers should be empty'
   printf '2\nenv:OPENROUTER_API_KEY\n1\n\n' | \
     "$CLAUDE_OVERLAY" configure
   local perms
-  perms=$(stat -f "%Lp" "$TEST_HOME/.config/claude-overlay/config.json" 2>/dev/null || stat -c "%a" "$TEST_HOME/.config/claude-overlay/config.json" 2>/dev/null)
+  perms=$(python3 -c "import os,sys; print(oct(os.stat(sys.argv[1]).st_mode)[-3:])" "$TEST_HOME/.config/claude-overlay/config.json")
   [ "$perms" = "600" ]
 }
 

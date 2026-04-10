@@ -76,7 +76,7 @@ assert 'duckduckgo' in d['mcpServers']
   [ "$status" -eq 0 ]
 
   local perms
-  perms=$(stat -f "%Lp" .claude/settings.local.json 2>/dev/null || stat -c "%a" .claude/settings.local.json 2>/dev/null)
+  perms=$(python3 -c "import os; print(oct(os.stat('.claude/settings.local.json').st_mode)[-3:])")
   [ "$perms" = "600" ]
 }
 
