@@ -1,5 +1,12 @@
 # claude-overlay
 
+[![CI](https://github.com/mzmmoazam/claude-overlay/workflows/CI/badge.svg)](https://github.com/mzmmoazam/claude-overlay/actions?query=workflow:CI)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![GitHub release](https://img.shields.io/github/release/mzmmoazam/claude-overlay.svg)](https://github.com/mzmmoazam/claude-overlay/releases)
+[![macOS](https://img.shields.io/badge/macOS-supported-000000?logo=apple&logoColor=white)](https://github.com/mzmmoazam/claude-overlay)
+[![Linux](https://img.shields.io/badge/Linux-supported-FCC624?logo=linux&logoColor=black)](https://github.com/mzmmoazam/claude-overlay)
+[![Homebrew](https://img.shields.io/badge/homebrew-tap-FBB040?logo=homebrew&logoColor=white)](https://github.com/mzmmoazam/homebrew-claude-overlay)
+
 Manage project-level [Claude Code](https://docs.anthropic.com/en/docs/claude-code) configuration for custom model providers.
 
 When using Claude Code through a proxy or third-party endpoint — **Databricks**, **Amazon Bedrock**, **OpenRouter**, **LiteLLM**, or others — Anthropic's native WebSearch and WebFetch tools may not work because they rely on Anthropic's own infrastructure. `claude-overlay` solves this by creating a project-level configuration overlay that:
@@ -11,12 +18,20 @@ When using Claude Code through a proxy or third-party endpoint — **Databricks*
 
 ## Install
 
+### Homebrew (macOS / Linux)
+
 ```bash
-# One-liner
+brew tap mzmmoazam/claude-overlay
+brew install claude-overlay
+```
+
+### curl
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/mzmmoazam/claude-overlay/main/install.sh | bash
 ```
 
-Or with Make:
+### From source
 
 ```bash
 git clone https://github.com/mzmmoazam/claude-overlay.git

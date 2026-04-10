@@ -37,3 +37,23 @@ jobs:
           files: |
             claude-overlay-*.tar.gz
             claude-overlay-*.tar.gz.sha256
+
+      - name: Update Homebrew tap
+        if: env.TAP_TOKEN != ''
+        env:
+          TAP_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          SHA256=$(sha256sum "claude-overlay-${VERSION}.tar.gz" | awk '{print $1}')
+
+          git clone "https://x-access-token:${TAP_TOKEN}@github.com/mzmmoazam/homebrew-claude-overlay.git" tap
+          cd tap
+
+          sed -i "s|version \".*\"|version \"${VERSION}\"|" Formula/claude-overlay.rb
+          sed -i "s|sha256 \".*\"|sha256 \"${SHA256}\"|" Formula/claude-overlay.rb
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/claude-overlay.rb
+          git commit -m "Update claude-overlay to ${VERSION}"
+          git push
