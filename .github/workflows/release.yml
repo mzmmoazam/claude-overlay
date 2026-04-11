@@ -47,7 +47,10 @@ jobs:
           TAP_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          SHA256=$(sha256sum "claude-overlay-${VERSION}.tar.gz" | awk '{print $1}')
+
+          # Download GitHub's auto-generated source archive (what Homebrew fetches)
+          curl -sL -o source.tar.gz "https://github.com/mzmmoazam/claude-overlay/archive/refs/tags/v${VERSION}.tar.gz"
+          SHA256=$(sha256sum source.tar.gz | awk '{print $1}')
 
           git clone "https://x-access-token:${TAP_TOKEN}@github.com/mzmmoazam/homebrew-claude-overlay.git" tap
           cd tap
