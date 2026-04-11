@@ -26,7 +26,8 @@ jobs:
             --exclude='.github' \
             --exclude='test' \
             --exclude='.git' \
-            -s "/^./claude-overlay-${VERSION}/" \
+            --exclude='__pycache__' \
+            --transform "s|^\./|claude-overlay-${VERSION}/|" \
             .
           sha256sum "claude-overlay-${VERSION}.tar.gz" > "claude-overlay-${VERSION}.tar.gz.sha256"
 
@@ -39,7 +40,7 @@ jobs:
             claude-overlay-*.tar.gz.sha256
 
       - name: Update Homebrew tap
-        if: env.TAP_TOKEN != ''
+        if: env.TAP_TOKEN
         env:
           TAP_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
         run: |
