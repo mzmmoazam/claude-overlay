@@ -130,6 +130,16 @@ do_install() {
     ok "Installed provider presets"
   fi
 
+  # ── Shell completions ─────────────────────────────────────────────────
+  if [ -d "$source_dir/completions" ]; then
+    local bash_comp_dir="$INSTALL_PREFIX/share/bash-completion/completions"
+    local zsh_comp_dir="$INSTALL_PREFIX/share/zsh/site-functions"
+    mkdir -p "$bash_comp_dir" "$zsh_comp_dir"
+    cp "$source_dir/completions/claude-overlay.bash" "$bash_comp_dir/claude-overlay" 2>/dev/null || true
+    cp "$source_dir/completions/claude-overlay.zsh" "$zsh_comp_dir/_claude-overlay" 2>/dev/null || true
+    ok "Installed shell completions"
+  fi
+
   # ── Check PATH ─────────────────────────────────────────────────────────
   echo ""
   if echo "$PATH" | tr ':' '\n' | grep -qF "$BIN_DIR"; then

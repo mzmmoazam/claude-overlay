@@ -63,9 +63,14 @@ claude-overlay setup
 |---------|-------------|
 | `claude-overlay configure` | Set up provider credentials (creates `~/.config/claude-overlay/config.json`) |
 | `claude-overlay setup` | Create overlay in current project |
+| `claude-overlay setup --dry-run` | Preview what setup would do without writing files |
 | `claude-overlay disable` | Remove overlay keys, keep other project settings |
 | `claude-overlay enable` | Restore overlay keys alongside other settings |
 | `claude-overlay status` | Show current project state |
+| `claude-overlay switch [provider]` | Switch active provider (multi-provider configs) |
+| `claude-overlay export` | Export config for team sharing (stdout) |
+| `claude-overlay import <file>` | Import a shared config file |
+| `claude-overlay doctor` | Check setup health (config, env vars, project) |
 | `claude-overlay self-update` | Update to latest release |
 | `claude-overlay --version` | Print version |
 
@@ -153,6 +158,54 @@ claude-overlay disable
 
 # Back to Databricks
 claude-overlay enable
+```
+
+## Multi-Provider & Team Sharing
+
+### Multiple providers
+
+Run `configure` multiple times to add providers — existing ones are preserved:
+
+```bash
+claude-overlay configure    # set up Databricks
+claude-overlay configure    # add OpenRouter (Databricks stays)
+claude-overlay switch       # interactive: pick which to use
+claude-overlay switch openrouter   # or switch directly by name
+```
+
+### Team sharing
+
+Export your config (secrets are sanitized to `env:` references) and share with teammates:
+
+```bash
+# Person A: export
+claude-overlay export > team-overlay.json
+
+# Person B: import and set up
+claude-overlay import team-overlay.json
+claude-overlay setup
+```
+
+### Health check
+
+Run `doctor` to validate your full setup:
+
+```bash
+claude-overlay doctor
+```
+
+```
+  ✓ python3 3.12.0
+  ✓ npx available
+  ✓ Config: ~/.config/claude-overlay/config.json
+  ✓ Config valid JSON
+  ✓ Provider: databricks
+  ✓ Endpoint: https://workspace.cloud.databricks.com/...
+  ✓ Auth: env:DATABRICKS_TOKEN → set
+  ✓ Tavily: env:TAVILY_API_KEY → set
+
+  ✓ Overlay: .claude/provider-overlay.json
+  ✓ Status: ENABLED
 ```
 
 ## Provider Examples

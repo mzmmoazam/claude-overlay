@@ -114,3 +114,26 @@ m = json.load(open('.mcp.json'))
 assert 'tavily' in m['mcpServers']
 "
 }
+
+@test "setup --dry-run shows preview without creating files" {
+  write_test_config
+  set_test_env_vars
+  run "$CLAUDE_OVERLAY" setup --dry-run
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"dry-run"* ]]
+  [[ "$output" == *"Provider:"*"databricks"* ]]
+  [[ "$output" == *"Base URL"* ]]
+  # No files should be created
+  [ ! -f ".claude/settings.local.json" ]
+  [ ! -f ".mcp.json" ]
+  [ ! -f ".claude/provider-overlay.json" ]
+}
+
+@test "setup --dry-run shows MCP servers" {
+  write_test_config
+  set_test_env_vars
+  run "$CLAUDE_OVERLAY" setup --dry-run
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"tavily"* ]]
+  [[ "$output" == *"duckduckgo"* ]]
+}

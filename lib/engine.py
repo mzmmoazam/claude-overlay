@@ -453,6 +453,91 @@ def action_status():
     print(json.dumps(result))
 
 
+def action_switch_provider():
+    """Switch default_provider in config file. Provider name in _SWITCH_TO env var."""
+    target = os.environ.get("_SWITCH_TO", "")
+    config = load(CONFIG_FILE)
+    if not config:
+        print("error:no_config")
+        sys.exit(1)
+
+    providers = config.get("providers", {})
+    if not target:
+        # List mode: print available providers as JSON
+        result = {
+            "default": config.get("default_provider", ""),
+            "providers": sorted(providers.keys()),
+        }
+        print(json.dumps(result))
+        return
+
+    if target not in providers:
+        print(f"error:unknown_provider:{target}")
+        sys.exit(1)
+
+    if config.get("default_provider") == target:
+        print("already_default")
+        return
+
+    config["default_provider"] = target
+    save(CONFIG_FILE, config)
+    print("ok")
+
+
+def action_export_config():
+    """Export config to stdout, sanitized for sharing."""
+    config = load(CONFIG_FILE)
+    if not config:
+        print("error:no_config")
+        sys.exit(1)
+
+    # Config should already use env: references, but scrub any raw tokens
+    for pname, pconf in config.get("providers", {}).items():
+        token = pconf.get("auth_token", "")
+        if token and not token.startswith("env:"):
+            pconf["auth_token"] = "env:YOUR_TOKEN_HERE"
+
+    print(json.dumps(config, indent=2))
+
+
+def action_import_config():
+    """Import config from a file (path in _IMPORT_PATH env var). Merge with existing."""
+    import_path = os.environ.get("_IMPORT_PATH", "")
+    if not import_path or not os.path.isfile(import_path):
+        print("error:file_not_found")
+        sys.exit(1)
+
+    imported = load(import_path)
+    if not imported:
+        print("error:invalid_json")
+        sys.exit(1)
+
+    # Validate minimal structure
+    if "providers" not in imported or not isinstance(imported["providers"], dict):
+        print("error:missing_providers")
+        sys.exit(1)
+
+    existing = load(CONFIG_FILE) or {"version": 1, "providers": {}}
+
+    # Merge providers (imported overwrites on conflict)
+    for pname, pconf in imported["providers"].items():
+        existing.setdefault("providers", {})[pname] = pconf
+
+    # Update default provider
+    if imported.get("default_provider"):
+        existing["default_provider"] = imported["default_provider"]
+
+    # Merge MCP servers
+    for name, conf in imported.get("mcp_servers", {}).items():
+        existing.setdefault("mcp_servers", {})[name] = conf
+
+    existing["version"] = imported.get("version", existing.get("version", 1))
+
+    os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
+    save(CONFIG_FILE, existing)
+    print("ok")
+
+
 # ── Dispatch ───────────────────────────────────────────────────────────────
 
 ACTIONS = {
@@ -462,6 +547,9 @@ ACTIONS = {
     "merge": action_merge,
     "remove": action_remove,
     "status": action_status,
+    "switch_provider": action_switch_provider,
+    "export_config": action_export_config,
+    "import_config": action_import_config,
 }
 
 def main():

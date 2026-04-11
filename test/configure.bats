@@ -119,14 +119,14 @@ assert d['mcp_servers'] == {}, 'mcp_servers should be empty'
   [ "$perms" = "600" ]
 }
 
-@test "configure warns on existing config" {
+@test "configure shows existing config info" {
   # Create an existing config
   write_test_config
-  # Try to configure, answer N to overwrite
-  run bash -c "printf 'n\n' | '$CLAUDE_OVERLAY' configure"
+  # Configure a second provider (openrouter), skipping MCP
+  printf '2\nenv:OPENROUTER_API_KEY\n3\n' | "$CLAUDE_OVERLAY" configure
+  run bash -c "printf '2\nenv:OPENROUTER_API_KEY\n3\n' | '$CLAUDE_OVERLAY' configure"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"already exists"* ]]
-  [[ "$output" == *"Keeping existing config"* ]]
+  [[ "$output" == *"Existing config"* ]]
 }
 
 @test "configure rejects invalid provider selection" {
