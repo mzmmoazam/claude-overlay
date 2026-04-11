@@ -19,6 +19,7 @@ command-line arguments or string interpolation.
 
 import json
 import os
+import re
 import sys
 import tempfile
 
@@ -496,6 +497,12 @@ def action_export_config():
         token = pconf.get("auth_token", "")
         if token and not token.startswith("env:"):
             pconf["auth_token"] = "env:YOUR_TOKEN_HERE"
+        # Scrub potential bearer tokens in custom headers
+        headers = pconf.get("custom_headers", "")
+        if headers:
+            pconf["custom_headers"] = re.sub(
+                r"(Bearer|Token|Basic)\s+\S+", r"\1 REDACTED", headers, flags=re.IGNORECASE
+            )
 
     print(json.dumps(config, indent=2))
 

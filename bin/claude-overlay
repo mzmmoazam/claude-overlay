@@ -98,7 +98,7 @@ migrate_legacy_if_needed() {
 
   if [ "$needs_migration" = true ]; then
     warn "Detected legacy files — migrating to new format…"
-    result=$(py_engine migrate_legacy)
+    result=$(py_engine migrate_legacy) || true
     if [ "$result" = "migrated" ]; then
       ok "Legacy files migrated and cleaned up"
     fi
@@ -925,7 +925,7 @@ cmd_enable() {
   info "Existing settings and MCP servers will be preserved."
   echo ""
 
-  result=$(py_engine merge)
+  result=$(py_engine merge) || true
 
   if [ "$result" = "ok" ]; then
     ok ".claude/settings.local.json — provider env vars + permissions merged"
@@ -1064,7 +1064,7 @@ for name, conf in servers.items():
   export _OV_PERMISSIONS_ALLOW="$permissions_allow_json"
   export _OV_PERMISSIONS_DENY="$permissions_deny_json"
 
-  result=$(py_engine create_overlay)
+  result=$(py_engine create_overlay) || true
   if [ "$result" = "ok" ]; then
     ok "Saved overlay → .claude/provider-overlay.json"
   else
@@ -1072,7 +1072,7 @@ for name, conf in servers.items():
   fi
 
   # ── Merge ───────────────────────────────────────────────────────────────
-  result=$(py_engine merge)
+  result=$(py_engine merge) || true
   if [ "$result" = "ok" ]; then
     ok "Merged config → .claude/settings.local.json"
     ok "Merged MCP servers → .mcp.json"
@@ -1237,27 +1237,20 @@ for r in json.loads(sys.argv[1]):
 
     # ── Check 10: overlay enabled ──
     if [ -f "$SETTINGS_FILE" ]; then
-      local overlay_key
-      overlay_key=$(python3 -c "
-import json
-ov = json.load(open('$OVERLAY_FILE'))
-env = ov.get('env', {})
-if env:
-    print(list(env.keys())[0])
-" 2>/dev/null) || true
-      if [ -n "$overlay_key" ]; then
-        local is_in_settings
-        is_in_settings=$(python3 -c "
-import json
-s = json.load(open('$SETTINGS_FILE'))
-env = s.get('env', {})
-print('yes' if '$overlay_key' in env else 'no')
-" 2>/dev/null) || true
-        if [ "$is_in_settings" = "yes" ]; then
-          echo -e "  ${GREEN}✓${NC} Status: ENABLED"
-        else
-          echo -e "  ${YELLOW}⚠${NC} Status: DISABLED — run 'claude-overlay enable'"
-        fi
+      local is_enabled
+      is_enabled=$(python3 -c "
+import json, sys
+ov = json.load(open(sys.argv[1]))
+s = json.load(open(sys.argv[2]))
+ov_env = ov.get('env', {})
+s_env = s.get('env', {})
+# Check if any overlay key is present in settings
+print('yes' if ov_env and any(k in s_env for k in ov_env) else 'no')
+" "$OVERLAY_FILE" "$SETTINGS_FILE" 2>/dev/null) || true
+      if [ "$is_enabled" = "yes" ]; then
+        echo -e "  ${GREEN}✓${NC} Status: ENABLED"
+      else
+        echo -e "  ${YELLOW}⚠${NC} Status: DISABLED — run 'claude-overlay enable'"
       fi
     else
       echo -e "  ${YELLOW}⚠${NC} Status: DISABLED — run 'claude-overlay enable'"
@@ -1368,11 +1361,11 @@ ${BOLD}Commands:${NC}
 ${BOLD}Setup options:${NC}
   -y, --yes    Skip confirmation prompts
   --dry-run    Show what would happen without making changes
-  --debug      Enable verbose debug output
 
 ${BOLD}Global options:${NC}
   --version    Print version
   --help       Show this help
+  --debug      Enable verbose debug output
 
 ${BOLD}First time?${NC}
   1. claude-overlay configure    # set up your credentials
