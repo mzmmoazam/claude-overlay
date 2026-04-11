@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.2.0] - 2026-04-11
+
+### Added
+- `doctor` command — validate full setup chain with 10 health checks
+- `switch` command — switch active provider without re-running configure
+- `export` command — export shareable config (secrets auto-sanitized)
+- `import` command — import config from file with merge support
+- `setup --dry-run` flag — preview what setup will do without writing files
+- Shell completions for bash and zsh
+- Multi-provider config support — configure merges instead of overwriting
+- Homebrew tap distribution (`brew install mzmmoazam/claude-overlay/claude-overlay`)
+
+### Changed
+- `configure` now merges new provider into existing config instead of overwriting
+- Overwrite guard changed from blocking prompt to informational display
+
+### Fixed
+- Shell injection prevention — file paths passed via sys.argv instead of string interpolation
+- `set -e` compatibility — all `py_engine` calls use `|| true` for consistent error handling
+
 ## [0.1.0] - 2026-04-09
 
 ### Added

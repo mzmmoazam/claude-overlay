@@ -54,7 +54,10 @@ export TAVILY_API_KEY="your-tavily-api-key"
 cd your-project
 claude-overlay setup
 
-# 4. Launch Claude Code — it now uses your custom provider + MCP web search
+# 4. Verify everything is working
+claude-overlay doctor
+
+# 5. Launch Claude Code — it now uses your custom provider + MCP web search
 ```
 
 ## Commands
@@ -533,6 +536,20 @@ Or add other MCP search servers like [Brave Search](https://github.com/nicholasg
 }
 ```
 
+## Shell Completions
+
+Tab completions for all commands and flags are installed automatically via Homebrew and `make install`. To enable manually:
+
+**Bash** — add to `~/.bashrc`:
+```bash
+source ~/.local/share/bash-completion/completions/claude-overlay
+```
+
+**Zsh** — add to `~/.zshrc` (before `compinit`):
+```zsh
+fpath=(~/.local/share/zsh/site-functions $fpath)
+```
+
 ## Security
 
 - **File permissions**: All files containing tokens are created with `chmod 600`
@@ -559,7 +576,7 @@ npm info duckduckgo-mcp-server@1.1.0
 git clone https://github.com/mzmmoazam/claude-overlay.git
 cd claude-overlay
 
-# Run tests (25 tests covering setup, enable/disable, status, migration)
+# Run tests (61 tests covering all commands)
 brew install bats-core  # or: apt install bats
 make test
 
@@ -578,15 +595,20 @@ make uninstall
 ```
 bin/claude-overlay          # Main CLI (bash)
 lib/engine.py               # JSON manipulation engine (python3)
-lib/presets/databricks.json  # Provider preset defaults
-test/                        # bats test suite
-  test_helper.bash           # Shared test setup
-  setup.bats                 # Setup command tests
-  enable_disable.bats        # Enable/disable cycle tests
-  status.bats                # Status command tests
-  migration.bats             # Legacy migration tests
-install.sh                   # curl|bash installer
-Makefile                     # make install/uninstall/test/lint
+lib/presets/*.json           # Provider preset defaults
+completions/                # Shell completions (bash, zsh)
+test/                       # bats test suite (61 tests)
+  test_helper.bash          # Shared test setup
+  setup.bats                # Setup + dry-run tests
+  enable_disable.bats       # Enable/disable cycle tests
+  status.bats               # Status command tests
+  configure.bats            # Configure command tests
+  doctor.bats               # Doctor health-check tests
+  switch.bats               # Provider switching tests
+  export_import.bats        # Export/import round-trip tests
+  migration.bats            # Legacy migration tests
+install.sh                  # curl|bash installer
+Makefile                    # make install/uninstall/test/lint
 ```
 
 ## FAQ
@@ -598,13 +620,13 @@ No. If you're using `claude.ai` or the Anthropic API with your own API key, WebS
 Maybe not. Bedrock and Vertex AI have [native Claude Code integrations](https://code.claude.com/docs/en/amazon-bedrock) (`CLAUDE_CODE_USE_BEDROCK=1`, `CLAUDE_CODE_USE_VERTEX=1`). Use `claude-overlay` only if your org adds a gateway layer on top, or if you want MCP-based web search as a replacement for the missing native tools.
 
 **Q: Can I have multiple providers configured?**
-Yes. Add multiple entries under `providers` in your config file and set `default_provider` to the one you use most. You can switch per-project by setting the `CLAUDE_OVERLAY_PROVIDER` environment variable before running `setup`.
+Yes. Run `claude-overlay configure` multiple times to add providers — existing ones are preserved. Use `claude-overlay switch` to change the active provider, or set the `CLAUDE_OVERLAY_PROVIDER` environment variable before running `setup`.
 
 **Q: What happens to my existing project settings?**
 They are preserved. `claude-overlay` only touches the keys it manages. Your custom permissions, env vars, and MCP servers are never modified.
 
 **Q: Can I use this in a shared team project?**
-Yes. The overlay files (`.claude/settings.local.json`, `.mcp.json`, `.claude/provider-overlay.json`) are automatically added to `.gitignore`, so each team member has their own local configuration. Share the `config.json` setup instructions with your team, and each person runs `claude-overlay setup` in their clone.
+Yes. The overlay files are automatically added to `.gitignore`, so each team member has their own local configuration. Use `claude-overlay export > team-config.json` to share a sanitized config (secrets replaced with `env:` references), and teammates import it with `claude-overlay import team-config.json`.
 
 ## License
 
