@@ -22,14 +22,16 @@ jobs:
       - name: Create tarball
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          tar -czf "claude-overlay-${VERSION}.tar.gz" \
+          OUTDIR="$(mktemp -d)"
+          tar -czf "${OUTDIR}/claude-overlay-${VERSION}.tar.gz" \
             --exclude='.github' \
             --exclude='test' \
             --exclude='.git' \
             --exclude='__pycache__' \
             --transform "s|^\./|claude-overlay-${VERSION}/|" \
             .
-          sha256sum "claude-overlay-${VERSION}.tar.gz" > "claude-overlay-${VERSION}.tar.gz.sha256"
+          sha256sum "${OUTDIR}/claude-overlay-${VERSION}.tar.gz" > "${OUTDIR}/claude-overlay-${VERSION}.tar.gz.sha256"
+          mv "${OUTDIR}"/claude-overlay-* .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
