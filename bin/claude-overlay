@@ -1285,6 +1285,11 @@ print('yes' if ov_env and any(k in s_env for k in ov_env) else 'no')
   fi
 
   # ── Check 11: Claude Code first-run gate (~/.claude.json) ──
+  #
+  # Always reported as a warning, never as an error: a missing stamp is
+  # fixable with a single command and shouldn't flunk the whole health
+  # check. When the user is nowhere near a project overlay, the gate is
+  # irrelevant anyway.
   echo ""
   local ob_json
   ob_json=$(py_engine check_onboarding 2>/dev/null) || ob_json=""
@@ -1292,26 +1297,22 @@ print('yes' if ov_env and any(k in s_env for k in ov_env) else 'no')
     python3 -c "
 import json, sys
 d = json.loads(sys.argv[1])
-GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; NC='\033[0m'
+GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 ok   = lambda m: print(f'  {GREEN}✓{NC} {m}')
 warn = lambda m: print(f'  {YELLOW}⚠{NC} {m}')
-bad  = lambda m: print(f'  {RED}✗{NC} {m}')
+info = lambda m: print(f'  {BLUE}ℹ{NC} {m}')
 if not d['file_exists']:
-    warn('~/.claude.json missing — Claude Code will show the welcome/login picker')
-    warn(\"  fix: run 'claude-overlay enable' (or 'setup' in a project)\")
+    info(\"~/.claude.json not present — Claude Code will show the welcome/login picker on first run\")
+    info(\"  fix: run 'claude-overlay setup' in a project (or 'enable' if overlay already exists)\")
 elif not d['has_completed_onboarding']:
-    bad('~/.claude.json: hasCompletedOnboarding not set')
-    bad(\"  fix: run 'claude-overlay enable' (or 'setup' in a project)\")
+    warn('~/.claude.json: hasCompletedOnboarding not set — Claude Code will show the welcome/login picker')
+    warn(\"  fix: run 'claude-overlay setup' (or 'enable') to stamp it\")
 elif not d['has_theme']:
-    warn('~/.claude.json: theme not set (Claude Code may still prompt)')
-    warn(\"  fix: run 'claude-overlay enable'\")
+    warn('~/.claude.json: theme not set — Claude Code may still show the theme picker')
+    warn(\"  fix: run 'claude-overlay setup' (or 'enable')\")
 else:
     ok(f\"Claude Code first-run gate: hasCompletedOnboarding + theme=\\\"{d['theme_value']}\\\"\")
 " "$ob_json"
-    # Surface first-run gate failures as errors
-    if python3 -c "import json,sys; d=json.loads(sys.argv[1]); sys.exit(0 if not d.get('has_completed_onboarding') else 1)" "$ob_json" 2>/dev/null; then
-      has_error=true
-    fi
   fi
 
   echo ""
