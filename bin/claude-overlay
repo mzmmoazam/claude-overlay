@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-VERSION="0.2.0"
+VERSION="0.2.1"
 
 # ── Resolve paths (macOS-compatible, no readlink -f) ───────────────────────
 resolve_dir() {
@@ -76,6 +76,25 @@ preflight() {
 py_engine() {
   dbg "py_engine $1"
   python3 "$LIB_DIR/engine.py" "$@"
+}
+
+# ── Stamp ~/.claude.json first-run gate ───────────────────────────────────
+# Claude Code v2+ shows the welcome/login picker until hasCompletedOnboarding
+# and theme are both set. Non-fatal on failure — the overlay still works for
+# non-interactive (claude -p) usage even without the stamp.
+ensure_onboarding_stamped() {
+  local result
+  result=$(py_engine ensure_onboarding 2>&1) || {
+    warn "Could not stamp ~/.claude.json first-run flags: $result"
+    warn "Run 'claude-overlay doctor' for details."
+    return 0
+  }
+  case "$result" in
+    created) info "Created ~/.claude.json with first-run flags set" ;;
+    updated) info "Stamped first-run flags into ~/.claude.json" ;;
+    skipped) dbg "~/.claude.json already has first-run flags" ;;
+    *)       warn "ensure_onboarding: unexpected response: $result" ;;
+  esac
 }
 
 # ── Require config file ───────────────────────────────────────────────────
@@ -935,6 +954,8 @@ cmd_enable() {
     exit 1
   fi
 
+  ensure_onboarding_stamped
+
   echo ""
   echo -e "${GREEN}${BOLD}Overlay enabled.${NC}"
   dim "Other project settings and MCP servers are untouched."
@@ -1079,6 +1100,9 @@ for name, conf in servers.items():
   else
     err "Failed to merge: $result"; exit 1
   fi
+
+  # ── First-run gate ──────────────────────────────────────────────────────
+  ensure_onboarding_stamped
 
   # ── Gitignore ───────────────────────────────────────────────────────────
   update_gitignore
@@ -1258,6 +1282,36 @@ print('yes' if ov_env and any(k in s_env for k in ov_env) else 'no')
   else
     echo -e "  ${BLUE}ℹ${NC} No overlay in this directory"
     dim "    Run 'claude-overlay setup' to set up this project."
+  fi
+
+  # ── Check 11: Claude Code first-run gate (~/.claude.json) ──
+  echo ""
+  local ob_json
+  ob_json=$(py_engine check_onboarding 2>/dev/null) || ob_json=""
+  if [ -n "$ob_json" ]; then
+    python3 -c "
+import json, sys
+d = json.loads(sys.argv[1])
+GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; NC='\033[0m'
+ok   = lambda m: print(f'  {GREEN}✓{NC} {m}')
+warn = lambda m: print(f'  {YELLOW}⚠{NC} {m}')
+bad  = lambda m: print(f'  {RED}✗{NC} {m}')
+if not d['file_exists']:
+    warn('~/.claude.json missing — Claude Code will show the welcome/login picker')
+    warn(\"  fix: run 'claude-overlay enable' (or 'setup' in a project)\")
+elif not d['has_completed_onboarding']:
+    bad('~/.claude.json: hasCompletedOnboarding not set')
+    bad(\"  fix: run 'claude-overlay enable' (or 'setup' in a project)\")
+elif not d['has_theme']:
+    warn('~/.claude.json: theme not set (Claude Code may still prompt)')
+    warn(\"  fix: run 'claude-overlay enable'\")
+else:
+    ok(f\"Claude Code first-run gate: hasCompletedOnboarding + theme=\\\"{d['theme_value']}\\\"\")
+" "$ob_json"
+    # Surface first-run gate failures as errors
+    if python3 -c "import json,sys; d=json.loads(sys.argv[1]); sys.exit(0 if not d.get('has_completed_onboarding') else 1)" "$ob_json" 2>/dev/null; then
+      has_error=true
+    fi
   fi
 
   echo ""

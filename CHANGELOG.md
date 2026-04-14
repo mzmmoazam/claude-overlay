@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.1] - 2026-04-14
+
+### Fixed
+- Claude Code v2+ welcome/login picker appearing after `setup` on fresh machines. Claude Code gates its interactive start on `~/.claude.json` having `hasCompletedOnboarding: true` and `theme` set — these are checked before project env vars are loaded, so the overlay's endpoint/token were never reached. `setup` and `enable` now stamp both keys non-destructively (existing values are preserved; `theme` is only set if the user hasn't already picked one).
+
+### Added
+- `doctor` — new first-run-gate check reports `~/.claude.json` state and surfaces a fix hint if either key is missing.
+- `engine.py` — new actions `ensure_onboarding` and `check_onboarding`.
+
 ## [0.2.0] - 2026-04-11
 
 ### Added

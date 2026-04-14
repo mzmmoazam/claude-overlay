@@ -628,6 +628,11 @@ They are preserved. `claude-overlay` only touches the keys it manages. Your cust
 **Q: Can I use this in a shared team project?**
 Yes. The overlay files are automatically added to `.gitignore`, so each team member has their own local configuration. Use `claude-overlay export > team-config.json` to share a sanitized config (secrets replaced with `env:` references), and teammates import it with `claude-overlay import team-config.json`.
 
+## Troubleshooting
+
+**`claude` still shows the welcome/login picker after `setup`**
+Claude Code v2+ checks `~/.claude.json` for `hasCompletedOnboarding` and `theme` before it ever loads your project's env vars — so on a fresh machine the welcome flow runs even when the overlay is correctly configured. `claude-overlay setup` and `enable` stamp those two keys for you automatically; if you're still seeing the picker, run `claude-overlay doctor` — it will report the first-run gate state and tell you how to fix it. Your existing keys in `~/.claude.json` are preserved; only the two gate fields are added (and `theme` is only set if you haven't already picked one).
+
 ## License
 
 MIT

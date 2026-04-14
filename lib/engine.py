@@ -38,6 +38,9 @@ LEG_OVERLAY = ".claude/databricks-overlay.json"
 XDG_CONFIG = os.environ.get("XDG_CONFIG_HOME", os.path.join(os.path.expanduser("~"), ".config"))
 CONFIG_FILE = os.path.join(XDG_CONFIG, "claude-overlay", "config.json")
 
+# Claude Code's global config — gates the first-run welcome/login flow
+HOME_CLAUDE_JSON = os.path.join(os.path.expanduser("~"), ".claude.json")
+
 DEBUG = os.environ.get("CLAUDE_OVERLAY_DEBUG", "") == "1"
 
 
@@ -62,21 +65,32 @@ def load(path):
 
 def save(path, data):
     """Atomically write a JSON file with restricted permissions (0600)."""
+    _atomic_write(path, data, 0o600)
+
+
+def save_with_mode(path, data, mode):
+    """Atomically write a JSON file, preserving a specific file mode.
+
+    Used for files we don't exclusively own (e.g. ~/.claude.json, which
+    Claude Code itself writes to with its own permission conventions).
+    """
+    _atomic_write(path, data, mode)
+
+
+def _atomic_write(path, data, mode):
     d = os.path.dirname(path)
     if d:
         os.makedirs(d, exist_ok=True)
 
-    # Write to temp file first, then atomic rename
     fd, tmp = tempfile.mkstemp(dir=d if d else ".", suffix=".tmp")
     try:
         with os.fdopen(fd, "w") as f:
             json.dump(data, f, indent=2)
             f.write("\n")
-        os.chmod(tmp, 0o600)
+        os.chmod(tmp, mode)
         os.rename(tmp, path)
-        debug(f"Saved {path} (0600)")
+        debug(f"Saved {path} ({oct(mode)})")
     except Exception:
-        # Clean up temp file on failure
         try:
             os.unlink(tmp)
         except OSError:
@@ -454,6 +468,62 @@ def action_status():
     print(json.dumps(result))
 
 
+# ── ACTION: ensure_onboarding ──────────────────────────────────────────────
+#
+# Claude Code v2+ gates its interactive start on ~/.claude.json having both
+#   hasCompletedOnboarding === true
+#   theme set
+# On a fresh machine neither is present, so `claude` shows the welcome/login
+# picker regardless of any ANTHROPIC_* env vars coming from the overlay.
+# This action stamps both keys, preserving everything else in the file.
+
+def action_ensure_onboarding():
+    """Stamp ~/.claude.json so Claude Code skips the welcome/login flow.
+
+    Non-destructive: loads any existing file, sets the two gate keys only
+    if missing/wrong, preserves all other keys and the file's existing mode.
+    """
+    existing = load(HOME_CLAUDE_JSON)
+    created = not os.path.exists(HOME_CLAUDE_JSON)
+    changed = False
+
+    if existing.get("hasCompletedOnboarding") is not True:
+        existing["hasCompletedOnboarding"] = True
+        changed = True
+
+    if "theme" not in existing:
+        existing["theme"] = "dark"
+        changed = True
+
+    if not changed:
+        print("skipped")
+        return
+
+    if created:
+        mode = 0o600
+    else:
+        try:
+            mode = os.stat(HOME_CLAUDE_JSON).st_mode & 0o777
+        except OSError:
+            mode = 0o600
+
+    save_with_mode(HOME_CLAUDE_JSON, existing, mode)
+    print("created" if created else "updated")
+
+
+def action_check_onboarding():
+    """Print JSON describing ~/.claude.json first-run-gate state."""
+    exists = os.path.exists(HOME_CLAUDE_JSON)
+    data = load(HOME_CLAUDE_JSON) if exists else {}
+    result = {
+        "file_exists": exists,
+        "has_completed_onboarding": data.get("hasCompletedOnboarding") is True,
+        "has_theme": "theme" in data,
+        "theme_value": data.get("theme", ""),
+    }
+    print(json.dumps(result))
+
+
 def action_switch_provider():
     """Switch default_provider in config file. Provider name in _SWITCH_TO env var."""
     target = os.environ.get("_SWITCH_TO", "")
@@ -554,6 +624,8 @@ ACTIONS = {
     "merge": action_merge,
     "remove": action_remove,
     "status": action_status,
+    "ensure_onboarding": action_ensure_onboarding,
+    "check_onboarding": action_check_onboarding,
     "switch_provider": action_switch_provider,
     "export_config": action_export_config,
     "import_config": action_import_config,
