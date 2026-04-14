@@ -16,13 +16,17 @@
 
 set -euo pipefail
 
-VERSION="0.2.1"
+VERSION="0.2.2"
 
 # ── Resolve paths (macOS-compatible, no readlink -f) ───────────────────────
 resolve_dir() {
   local target="$1"
   if [ -L "$target" ]; then
-    target="$(cd "$(dirname "$target")" && readlink "$(basename "$target")")"
+    local link_dir
+    link_dir="$(cd "$(dirname "$target")" && pwd -P)"
+    target="$(readlink "$target")"
+    # If readlink returned a relative path, resolve it from the symlink's directory
+    [[ "$target" != /* ]] && target="$link_dir/$target"
   fi
   (cd "$(dirname "$target")" && pwd -P)
 }
@@ -92,7 +96,7 @@ ensure_onboarding_stamped() {
   case "$result" in
     created) info "Created ~/.claude.json with first-run flags set" ;;
     updated) info "Stamped first-run flags into ~/.claude.json" ;;
-    skipped) dbg "~/.claude.json already has first-run flags" ;;
+    skipped) dbg "First-run flags already set in ~/.claude.json" ;;
     *)       warn "ensure_onboarding: unexpected response: $result" ;;
   esac
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.2] - 2026-04-14
+
+### Fixed
+- Homebrew install broken by `resolve_dir` not handling relative symlinks. Homebrew links `/opt/homebrew/bin/claude-overlay` to `../Cellar/claude-overlay/<ver>/bin/claude-overlay`; the old code tried to `cd` to that relative path from the user's cwd instead of from the symlink's own directory, producing `cd: ../Cellar/claude-overlay/0.2.1/bin: No such file or directory`. `resolve_dir` now anchors relative `readlink` output to the symlink's parent directory. (Thanks Amir for the patch.)
+- Shellcheck SC2088 warning on a debug message containing a leading `~/.claude.json` — reworded so the tilde isn't at the start of the string. CI lint is green again.
+
 ## [0.2.1] - 2026-04-14
 
 ### Fixed
