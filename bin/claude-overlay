@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-VERSION="0.2.3"
+VERSION="0.2.4"
 
 # ── Resolve paths (macOS-compatible, no readlink -f) ───────────────────────
 resolve_dir() {
@@ -167,39 +167,92 @@ _cfg_mcp_skip=false
 _cfg_mcp_duckduckgo_only=false
 
 # ── Shared: prompt for auth token ─────────────────────────────────────────
+# Rejects obvious placeholder inputs (menu digits, too-short strings) and
+# loops until a plausible token or an `env:VAR` reference is provided.
+_read_token_value() {
+  # Usage: _read_token_value "prompt text" "env_var_name"
+  # Sets _cfg_auth_token_value and _cfg_auth_token_source.
+  local prompt="$1"
+  local env_var_name="$2"
+  local val
+  while true; do
+    echo -ne "${YELLOW}?${NC} ${prompt}: "
+    read -r val
+    if [ -z "$val" ]; then
+      err "Auth token is required — paste the token value or type env:${env_var_name}."
+      continue
+    fi
+    # Reject obvious menu-digit mistakes and anything implausibly short.
+    # Real tokens are always >= 10 characters; 1/2/y/n/yes/no are not tokens.
+    if [[ "$val" =~ ^[0-9]$ ]] || [[ "$val" =~ ^[yYnN]$ ]] || \
+       [[ "$val" =~ ^(yes|no)$ ]] || [ ${#val} -lt 10 ]; then
+      err "That doesn't look like a real token. Paste the actual secret, or type:  env:${env_var_name}"
+      continue
+    fi
+    break
+  done
+  _cfg_auth_token_value="$val"
+  if [[ "$val" == env:* ]]; then
+    _cfg_auth_token_source="env"
+  else
+    _cfg_auth_token_source="raw"
+    warn "Storing raw token. Consider using env:${env_var_name} instead."
+  fi
+}
+
 prompt_auth_token() {
   local env_var_name="$1"
   local detected_value="$2"
 
   echo ""
-  echo -e "  ${BLUE}How to provide your auth token:${NC}"
-  echo "    1) env:$env_var_name — reads from environment variable (recommended)"
-  echo "    2) Raw token value — stored directly in config (less secure)"
-  echo ""
-
   if [ -n "$detected_value" ]; then
     echo -e "  ${GREEN}✓${NC} Detected \$$env_var_name in environment"
     echo -ne "${YELLOW}?${NC} Use env:$env_var_name? ${DIM}(Y/n)${NC} "
     read -r use_env
     if [[ "$use_env" =~ ^[Nn] ]]; then
-      echo -ne "${YELLOW}?${NC} Auth token value: "
-      read -r _cfg_auth_token_value
-      _cfg_auth_token_source="raw"
+      _read_token_value "Auth token value" "$env_var_name"
     else
       _cfg_auth_token_value="env:$env_var_name"
       _cfg_auth_token_source="env"
     fi
-  else
-    echo -ne "${YELLOW}?${NC} Auth token or env: reference: "
-    read -r _cfg_auth_token_value
-    if [ -z "$_cfg_auth_token_value" ]; then err "Auth token is required."; exit 1; fi
-    if [[ "$_cfg_auth_token_value" == env:* ]]; then
-      _cfg_auth_token_source="env"
-    else
-      _cfg_auth_token_source="raw"
-      warn "Storing raw token. Consider using env:$env_var_name instead."
-    fi
+    return
   fi
+
+  # No env var detected — walk the user through an explicit choice so they
+  # can't confuse "press 1" with "type your token".
+  echo -e "  ${BLUE}How would you like to provide your auth token?${NC}"
+  echo "    1) env:$env_var_name — read from environment variable (recommended)"
+  echo "    2) Paste the token value — stored directly in config (less secure)"
+  echo ""
+  while true; do
+    echo -ne "${YELLOW}?${NC} Selection ${DIM}[1]${NC}, or paste a token / env:reference: "
+    read -r choice
+    case "${choice:-1}" in
+      1)
+        _cfg_auth_token_value="env:$env_var_name"
+        _cfg_auth_token_source="env"
+        echo -e "  ${DIM}Using env:$env_var_name — remember to export ${env_var_name} in your shell profile.${NC}"
+        return
+        ;;
+      2)
+        _read_token_value "Paste your auth token" "$env_var_name"
+        return
+        ;;
+    esac
+    # Not a menu digit — treat as a directly-pasted token or env: reference.
+    if [[ "$choice" == env:* ]] && [ ${#choice} -gt 4 ]; then
+      _cfg_auth_token_value="$choice"
+      _cfg_auth_token_source="env"
+      return
+    fi
+    if [ ${#choice} -ge 10 ]; then
+      _cfg_auth_token_value="$choice"
+      _cfg_auth_token_source="raw"
+      warn "Storing raw token. Consider using env:${env_var_name} instead."
+      return
+    fi
+    err "Please enter 1, 2, an env:${env_var_name} reference, or paste the actual token."
+  done
 }
 
 # ── Shared: MCP server selection ──────────────────────────────────────────

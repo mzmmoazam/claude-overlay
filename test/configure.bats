@@ -135,6 +135,34 @@ assert d['mcp_servers'] == {}, 'mcp_servers should be empty'
   [[ "$output" == *"Invalid selection"* ]]
 }
 
+@test "configure rejects bare '1' as a raw token (menu-mistake guard)" {
+  # Regression: users typed '1' thinking they were picking the menu option.
+  # Simulate: no DATABRICKS_TOKEN set, pick databricks (1), url, choose
+  # paste-token (2), then type '1' (should be rejected), then a real token.
+  unset DATABRICKS_TOKEN
+  output=$(printf '1\nhttps://test.cloud.databricks.com/serving-endpoints/anthropic\n2\n1\nreal-token-abcdef12345\n1\n\n' | \
+    "$CLAUDE_OVERLAY" configure 2>&1)
+  [[ "$output" == *"doesn't look like a real token"* ]]
+  python3 -c "
+import json
+d = json.load(open('$TEST_HOME/.config/claude-overlay/config.json'))
+assert d['providers']['databricks']['auth_token'] == 'real-token-abcdef12345', d['providers']['databricks']['auth_token']
+"
+}
+
+@test "configure accepts env: reference directly at the menu prompt" {
+  # When env var is not set, the menu still accepts a pasted env:VAR reference
+  # as a shortcut (length > 4, starts with env:).
+  unset DATABRICKS_TOKEN
+  printf '1\nhttps://test.cloud.databricks.com/serving-endpoints/anthropic\nenv:DATABRICKS_TOKEN\n1\n\n' | \
+    "$CLAUDE_OVERLAY" configure
+  python3 -c "
+import json
+d = json.load(open('$TEST_HOME/.config/claude-overlay/config.json'))
+assert d['providers']['databricks']['auth_token'] == 'env:DATABRICKS_TOKEN'
+"
+}
+
 @test "configure auto-detects DATABRICKS_HOST" {
   export DATABRICKS_HOST="https://my-workspace.cloud.databricks.com"
   output=$(printf '1\n\nenv:DATABRICKS_TOKEN\n1\n\n' | "$CLAUDE_OVERLAY" configure 2>&1)

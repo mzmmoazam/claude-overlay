@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.2.4] - 2026-04-17
+
+### Fixed
+- `configure` auth-token prompt was ambiguous when the env var wasn't set: the code printed a `1) env:… 2) Paste token` menu but then asked for the token value directly. Users (reasonably) typed `1` expecting to pick the menu option, and the CLI happily stored `1` as a raw auth token. `prompt_auth_token` now drives a real menu, rejects single-digit / yes-no / <10-char placeholders, and accepts a directly-pasted `env:VAR` reference as a shortcut. Thanks to the team members who flagged this.
+
 ## [0.2.3] - 2026-04-17
 
 ### Fixed
