@@ -12,8 +12,5 @@
     "mcp__tavily__tavily_research",
     "mcp__duckduckgo__search"
   ],
-  "permissions_deny": [],
-  "required_config": [
-    "auth_token"
-  ]
+  "permissions_deny": []
 }

@@ -13,6 +13,9 @@ test/.bats/
 # Python
 __pycache__/
 *.pyc
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
 
 # Editor
 *.swp
@@ -23,3 +26,5 @@ __pycache__/
 
 # Marketing drafts (local only)
 marketing/
+*.pptx
+create_presentation.py

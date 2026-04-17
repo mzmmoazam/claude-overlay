@@ -209,7 +209,10 @@ claude-overlay doctor
 
   ✓ Overlay: .claude/provider-overlay.json
   ✓ Status: ENABLED
+  ✓ Claude Code first-run gate: hasCompletedOnboarding + theme="dark"
 ```
+
+> **First-run gate check**: Claude Code v2+ shows a welcome/login picker until `~/.claude.json` has `hasCompletedOnboarding: true` and `theme` set. `setup` and `enable` stamp these non-destructively, and `doctor` verifies them.
 
 ## Provider Examples
 

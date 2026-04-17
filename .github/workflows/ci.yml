@@ -18,6 +18,27 @@ jobs:
           additional_files: 'install.sh'
       - name: Python syntax check
         run: python3 -m py_compile lib/engine.py
+      - name: Verify pinned npm packages exist
+        run: |
+          # Extract every occurrence of `<pkg>@<version>` from MCP configs and
+          # ensure each actually resolves on the npm registry. This guards
+          # against hallucinated version pins landing in the code.
+          set -e
+          fail=0
+          pkgs=$(grep -IhroE '(tavily-mcp|duckduckgo-mcp-server)@[0-9][0-9A-Za-z.-]*' \
+                   --exclude-dir=__pycache__ \
+                   bin/ lib/ test/ README.md | sort -u)
+          echo "Pinned MCP packages found:"
+          echo "$pkgs"
+          for pkg in $pkgs; do
+            if ! npm view "$pkg" version >/dev/null 2>&1; then
+              echo "::error::Package does not exist on npm: $pkg"
+              fail=1
+            else
+              echo "✓ $pkg exists"
+            fi
+          done
+          exit $fail
 
   test:
     runs-on: ${{ matrix.os }}
