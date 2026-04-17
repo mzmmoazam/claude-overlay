@@ -74,7 +74,7 @@ EOF
     "duckduckgo": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "duckduckgo-mcp-server@1.1.0"]
+      "args": ["-y", "duckduckgo-mcp-server@0.1.2"]
     }
   }
 }

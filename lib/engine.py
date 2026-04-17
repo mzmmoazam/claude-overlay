@@ -281,13 +281,13 @@ def action_create_overlay():
             "tavily": {
                 "type": "stdio",
                 "command": "npx",
-                "args": ["-y", "tavily-mcp@0.3.1"],
+                "args": ["-y", "tavily-mcp@0.2.18"],
                 "env": {"TAVILY_API_KEY": os.environ.get("_OV_TAVILY_KEY", "")}
             },
             "duckduckgo": {
                 "type": "stdio",
                 "command": "npx",
-                "args": ["-y", "duckduckgo-mcp-server@1.1.0"]
+                "args": ["-y", "duckduckgo-mcp-server@0.1.2"]
             }
         }
 

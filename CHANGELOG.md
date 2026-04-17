@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.2.3] - 2026-04-17
+
+### Fixed
+- MCP package versions were hallucinated and didn't exist on npm. Fixed `tavily-mcp@0.3.1` → `tavily-mcp@0.2.18` and `duckduckgo-mcp-server@1.1.0` → `duckduckgo-mcp-server@0.1.2`. This would have caused `npx` to fail on first `setup`.
+
 ## [0.2.2] - 2026-04-14
 
 ### Fixed

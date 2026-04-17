@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-VERSION="0.2.2"
+VERSION="0.2.3"
 
 # ── Resolve paths (macOS-compatible, no readlink -f) ───────────────────────
 resolve_dir() {
@@ -300,13 +300,13 @@ if not mcp_skip:
         mcp_servers['tavily'] = {
             'type': 'stdio',
             'command': 'npx',
-            'args': ['-y', 'tavily-mcp@0.3.1'],
+            'args': ['-y', 'tavily-mcp@0.2.18'],
             'env': {'TAVILY_API_KEY': tavily_key}
         }
     mcp_servers['duckduckgo'] = {
         'type': 'stdio',
         'command': 'npx',
-        'args': ['-y', 'duckduckgo-mcp-server@1.1.0']
+        'args': ['-y', 'duckduckgo-mcp-server@0.1.2']
     }
 
 config['mcp_servers'] = mcp_servers

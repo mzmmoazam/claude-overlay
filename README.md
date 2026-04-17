@@ -238,13 +238,13 @@ Databricks exposes Claude models via the Anthropic Messages API format.
     "tavily": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "tavily-mcp@0.3.1"],
+      "args": ["-y", "tavily-mcp@0.2.18"],
       "env": { "TAVILY_API_KEY": "env:TAVILY_API_KEY" }
     },
     "duckduckgo": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "duckduckgo-mcp-server@1.1.0"]
+      "args": ["-y", "duckduckgo-mcp-server@0.1.2"]
     }
   }
 }
@@ -279,13 +279,13 @@ export TAVILY_API_KEY="tvly-..."
     "tavily": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "tavily-mcp@0.3.1"],
+      "args": ["-y", "tavily-mcp@0.2.18"],
       "env": { "TAVILY_API_KEY": "env:TAVILY_API_KEY" }
     },
     "duckduckgo": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "duckduckgo-mcp-server@1.1.0"]
+      "args": ["-y", "duckduckgo-mcp-server@0.1.2"]
     }
   }
 }
@@ -322,13 +322,13 @@ export TAVILY_API_KEY="tvly-..."
     "tavily": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "tavily-mcp@0.3.1"],
+      "args": ["-y", "tavily-mcp@0.2.18"],
       "env": { "TAVILY_API_KEY": "env:TAVILY_API_KEY" }
     },
     "duckduckgo": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "duckduckgo-mcp-server@1.1.0"]
+      "args": ["-y", "duckduckgo-mcp-server@0.1.2"]
     }
   }
 }
@@ -394,7 +394,7 @@ Bedrock has [native Claude Code support](https://code.claude.com/docs/en/amazon-
     "tavily": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "tavily-mcp@0.3.1"],
+      "args": ["-y", "tavily-mcp@0.2.18"],
       "env": { "TAVILY_API_KEY": "env:TAVILY_API_KEY" }
     }
   }
@@ -428,13 +428,13 @@ Any endpoint that exposes the [Anthropic Messages API format](https://code.claud
     "tavily": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "tavily-mcp@0.3.1"],
+      "args": ["-y", "tavily-mcp@0.2.18"],
       "env": { "TAVILY_API_KEY": "env:TAVILY_API_KEY" }
     },
     "duckduckgo": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "duckduckgo-mcp-server@1.1.0"]
+      "args": ["-y", "duckduckgo-mcp-server@0.1.2"]
     }
   }
 }
@@ -515,7 +515,7 @@ You can customize which servers are included in your config file. If you only wa
     "duckduckgo": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "duckduckgo-mcp-server@1.1.0"]
+      "args": ["-y", "duckduckgo-mcp-server@0.1.2"]
     }
   }
 }
@@ -566,8 +566,8 @@ MCP servers are installed via `npx -y`, which auto-installs and runs npm package
 
 ```bash
 # Check what will be installed
-npm info tavily-mcp@0.3.1
-npm info duckduckgo-mcp-server@1.1.0
+npm info tavily-mcp@0.2.18
+npm info duckduckgo-mcp-server@0.1.2
 ```
 
 ## Development

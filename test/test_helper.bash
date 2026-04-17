@@ -59,13 +59,13 @@ write_test_config() {
     "tavily": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "tavily-mcp@0.3.1"],
+      "args": ["-y", "tavily-mcp@0.2.18"],
       "env": {"TAVILY_API_KEY": "env:TAVILY_API_KEY"}
     },
     "duckduckgo": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "duckduckgo-mcp-server@1.1.0"]
+      "args": ["-y", "duckduckgo-mcp-server@0.1.2"]
     }
   }
 }
@@ -101,13 +101,13 @@ write_test_config_openrouter() {
     "tavily": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "tavily-mcp@0.3.1"],
+      "args": ["-y", "tavily-mcp@0.2.18"],
       "env": {"TAVILY_API_KEY": "env:TAVILY_API_KEY"}
     },
     "duckduckgo": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "duckduckgo-mcp-server@1.1.0"]
+      "args": ["-y", "duckduckgo-mcp-server@0.1.2"]
     }
   }
 }
