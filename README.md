@@ -117,7 +117,7 @@ Claude Overlay — Project Status
 /home/user/my-project
 
   Provider       ENABLED
-  Model          databricks-claude-opus-4-6
+  Model          databricks-claude-opus-4-7
   Endpoint       https://my-workspace.cloud.databricks.com/serving-endpoints/anthropic
 
   Managed MCP servers:
@@ -230,8 +230,8 @@ Databricks exposes Claude models via the Anthropic Messages API format.
     "databricks": {
       "base_url": "https://YOUR-WORKSPACE.cloud.databricks.com/serving-endpoints/anthropic",
       "auth_token": "env:DATABRICKS_TOKEN",
-      "model": "databricks-claude-opus-4-6",
-      "opus_model": "databricks-claude-opus-4-6",
+      "model": "databricks-claude-opus-4-7",
+      "opus_model": "databricks-claude-opus-4-7",
       "sonnet_model": "databricks-claude-sonnet-4-6",
       "haiku_model": "databricks-claude-haiku-4-5",
       "custom_headers": "x-databricks-use-coding-agent-mode: true"
@@ -273,7 +273,7 @@ export TAVILY_API_KEY="tvly-..."
       "base_url": "https://openrouter.ai/api",
       "auth_token": "env:OPENROUTER_API_KEY",
       "model": "anthropic/claude-sonnet-4.6",
-      "opus_model": "anthropic/claude-opus-4.6",
+      "opus_model": "anthropic/claude-opus-4.7",
       "sonnet_model": "anthropic/claude-sonnet-4.6",
       "haiku_model": "anthropic/claude-haiku-4.5"
     }
@@ -316,7 +316,7 @@ export TAVILY_API_KEY="tvly-..."
       "base_url": "https://your-litellm-server:4000",
       "auth_token": "env:LITELLM_API_KEY",
       "model": "claude-sonnet-4-6",
-      "opus_model": "claude-opus-4-6",
+      "opus_model": "claude-opus-4-7",
       "sonnet_model": "claude-sonnet-4-6",
       "haiku_model": "claude-haiku-4-5"
     }
@@ -359,7 +359,7 @@ export TAVILY_API_KEY="tvly-..."
       "base_url": "https://gateway.ai.cloudflare.com/v1/ACCOUNT_ID/GATEWAY_ID/anthropic",
       "auth_token": "env:ANTHROPIC_API_KEY",
       "model": "claude-sonnet-4-6",
-      "opus_model": "claude-opus-4-6",
+      "opus_model": "claude-opus-4-7",
       "sonnet_model": "claude-sonnet-4-6",
       "haiku_model": "claude-haiku-4-5",
       "custom_headers": "cf-aig-authorization: Bearer env:CF_AIG_TOKEN"
@@ -388,7 +388,7 @@ Bedrock has [native Claude Code support](https://code.claude.com/docs/en/amazon-
       "base_url": "https://your-bedrock-gateway.corp.example.com",
       "auth_token": "env:BEDROCK_GATEWAY_TOKEN",
       "model": "us.anthropic.claude-sonnet-4-6-v1",
-      "opus_model": "us.anthropic.claude-opus-4-6-v1",
+      "opus_model": "us.anthropic.claude-opus-4-7-v1",
       "sonnet_model": "us.anthropic.claude-sonnet-4-6-v1",
       "haiku_model": "us.anthropic.claude-haiku-4-5-20251001-v1:0"
     }
@@ -421,7 +421,7 @@ Any endpoint that exposes the [Anthropic Messages API format](https://code.claud
       "base_url": "https://ai-gateway.corp.example.com/v1",
       "auth_token": "env:CORP_AI_TOKEN",
       "model": "claude-sonnet-4-6",
-      "opus_model": "claude-opus-4-6",
+      "opus_model": "claude-opus-4-7",
       "sonnet_model": "claude-sonnet-4-6",
       "haiku_model": "claude-haiku-4-5",
       "custom_headers": "X-Team-Id: platform-eng"

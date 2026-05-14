@@ -22,16 +22,16 @@ write_multi_provider_config() {
     "databricks": {
       "base_url": "https://test-workspace.cloud.databricks.com/serving-endpoints/anthropic",
       "auth_token": "env:DATABRICKS_TOKEN",
-      "model": "databricks-claude-opus-4-6",
-      "opus_model": "databricks-claude-opus-4-6",
+      "model": "databricks-claude-opus-4-7",
+      "opus_model": "databricks-claude-opus-4-7",
       "sonnet_model": "databricks-claude-sonnet-4-6",
       "haiku_model": "databricks-claude-haiku-4-5"
     },
     "openrouter": {
       "base_url": "https://openrouter.ai/api",
       "auth_token": "env:OPENROUTER_API_KEY",
-      "model": "anthropic/claude-opus-4.6",
-      "opus_model": "anthropic/claude-opus-4.6",
+      "model": "anthropic/claude-opus-4.7",
+      "opus_model": "anthropic/claude-opus-4.7",
       "sonnet_model": "anthropic/claude-sonnet-4.6",
       "haiku_model": "anthropic/claude-haiku-4.5"
     }

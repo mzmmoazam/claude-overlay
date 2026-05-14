@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.0] - 2026-05-14
+
+### Changed
+- Default Opus model bumped from `claude-opus-4-6` to `claude-opus-4-7` across all provider presets (Databricks, OpenRouter, Cloudflare, LiteLLM, Bedrock gateway). Existing configs at `~/.config/claude-overlay/config.json` are untouched — only new `configure` runs pick up 4.7. To upgrade an existing project, re-run `claude-overlay configure` and accept the new default, or edit `model` / `opus_model` manually.
+- README examples updated to reflect 4.7 defaults.
+
+### Unchanged
+- Sonnet 4.6 and Haiku 4.5 — no newer versions exist yet.
+
 ## [0.2.4] - 2026-04-17
 
 ### Fixed

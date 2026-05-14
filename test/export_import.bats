@@ -67,7 +67,7 @@ EOF
     "openrouter": {
       "base_url": "https://openrouter.ai/api",
       "auth_token": "env:OPENROUTER_API_KEY",
-      "model": "anthropic/claude-opus-4.6"
+      "model": "anthropic/claude-opus-4.7"
     }
   },
   "mcp_servers": {
@@ -103,7 +103,7 @@ assert 'openrouter' in d['providers']
     "openrouter": {
       "base_url": "https://openrouter.ai/api",
       "auth_token": "env:OPENROUTER_API_KEY",
-      "model": "anthropic/claude-opus-4.6"
+      "model": "anthropic/claude-opus-4.7"
     }
   }
 }

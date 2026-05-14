@@ -108,7 +108,7 @@ assert 'duckduckgo' in d['mcpServers']
   python3 -c "
 import json
 s = json.load(open('.claude/settings.local.json'))
-assert s['env']['ANTHROPIC_MODEL'] == 'anthropic/claude-opus-4.6'
+assert s['env']['ANTHROPIC_MODEL'] == 'anthropic/claude-opus-4.7'
 assert s['env']['ANTHROPIC_BASE_URL'] == 'https://openrouter.ai/api'
 m = json.load(open('.mcp.json'))
 assert 'tavily' in m['mcpServers']

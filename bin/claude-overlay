@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-VERSION="0.2.4"
+VERSION="0.3.0"
 
 # ── Resolve paths (macOS-compatible, no readlink -f) ───────────────────────
 resolve_dir() {
@@ -431,8 +431,8 @@ print(c.get('DEFAULT', 'host', fallback=''))
   prompt_auth_token "DATABRICKS_TOKEN" "$detected_token"
 
   _cfg_custom_headers="x-databricks-use-coding-agent-mode: true"
-  _cfg_model="databricks-claude-opus-4-6"
-  _cfg_opus="databricks-claude-opus-4-6"
+  _cfg_model="databricks-claude-opus-4-7"
+  _cfg_opus="databricks-claude-opus-4-7"
   _cfg_sonnet="databricks-claude-sonnet-4-6"
   _cfg_haiku="databricks-claude-haiku-4-5"
 }
@@ -446,8 +446,8 @@ configure_openrouter() {
   prompt_auth_token "OPENROUTER_API_KEY" "$detected_key"
 
   _cfg_custom_headers=""
-  _cfg_model="anthropic/claude-opus-4.6"
-  _cfg_opus="anthropic/claude-opus-4.6"
+  _cfg_model="anthropic/claude-opus-4.7"
+  _cfg_opus="anthropic/claude-opus-4.7"
   _cfg_sonnet="anthropic/claude-sonnet-4.6"
   _cfg_haiku="anthropic/claude-haiku-4.5"
 }
@@ -473,9 +473,9 @@ configure_litellm() {
   read -r _cfg_model
   [ -z "$_cfg_model" ] && _cfg_model="claude-sonnet-4-6"
 
-  echo -ne "${YELLOW}?${NC} Opus model ${DIM}[claude-opus-4-6]${NC}: "
+  echo -ne "${YELLOW}?${NC} Opus model ${DIM}[claude-opus-4-7]${NC}: "
   read -r _cfg_opus
-  [ -z "$_cfg_opus" ] && _cfg_opus="claude-opus-4-6"
+  [ -z "$_cfg_opus" ] && _cfg_opus="claude-opus-4-7"
 
   echo -ne "${YELLOW}?${NC} Sonnet model ${DIM}[$_cfg_model]${NC}: "
   read -r _cfg_sonnet
@@ -539,7 +539,7 @@ configure_cloudflare() {
   fi
 
   _cfg_model="claude-sonnet-4-6"
-  _cfg_opus="claude-opus-4-6"
+  _cfg_opus="claude-opus-4-7"
   _cfg_sonnet="claude-sonnet-4-6"
   _cfg_haiku="claude-haiku-4-5"
 }
@@ -561,8 +561,8 @@ configure_bedrock() {
   prompt_auth_token "BEDROCK_GATEWAY_TOKEN" ""
 
   _cfg_custom_headers=""
-  _cfg_model="us.anthropic.claude-opus-4-6-v1"
-  _cfg_opus="us.anthropic.claude-opus-4-6-v1"
+  _cfg_model="us.anthropic.claude-opus-4-7-v1"
+  _cfg_opus="us.anthropic.claude-opus-4-7-v1"
   _cfg_sonnet="us.anthropic.claude-sonnet-4-6"
   _cfg_haiku="us.anthropic.claude-haiku-4-5-20251001-v1:0"
 }

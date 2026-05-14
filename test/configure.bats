@@ -22,7 +22,7 @@ d = json.load(open('$TEST_HOME/.config/claude-overlay/config.json'))
 assert d['default_provider'] == 'databricks'
 assert d['providers']['databricks']['base_url'] == 'https://test.cloud.databricks.com/serving-endpoints/anthropic'
 assert d['providers']['databricks']['auth_token'] == 'env:DATABRICKS_TOKEN'
-assert d['providers']['databricks']['model'] == 'databricks-claude-opus-4-6'
+assert d['providers']['databricks']['model'] == 'databricks-claude-opus-4-7'
 assert d['providers']['databricks']['custom_headers'] == 'x-databricks-use-coding-agent-mode: true'
 "
 }
@@ -36,7 +36,7 @@ import json
 d = json.load(open('$TEST_HOME/.config/claude-overlay/config.json'))
 assert d['default_provider'] == 'openrouter'
 assert d['providers']['openrouter']['base_url'] == 'https://openrouter.ai/api'
-assert d['providers']['openrouter']['model'] == 'anthropic/claude-opus-4.6'
+assert d['providers']['openrouter']['model'] == 'anthropic/claude-opus-4.7'
 "
 }
 
@@ -73,7 +73,7 @@ assert d['providers']['cloudflare']['model'] == 'claude-sonnet-4-6'
 import json
 d = json.load(open('$TEST_HOME/.config/claude-overlay/config.json'))
 assert d['default_provider'] == 'bedrock-gateway'
-assert d['providers']['bedrock-gateway']['model'] == 'us.anthropic.claude-opus-4-6-v1'
+assert d['providers']['bedrock-gateway']['model'] == 'us.anthropic.claude-opus-4-7-v1'
 "
 }
 
