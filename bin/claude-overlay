@@ -339,6 +339,16 @@ if os.path.isfile(path):
     except (json.JSONDecodeError, OSError):
         config = {}
 
+# Preserve user-edited fields that configure never re-prompts for.
+# A full-replace would silently drop an env block the user added to
+# unlock features (e.g. CLAUDE_CODE_MAX_CONTEXT_TOKENS) whenever they
+# rotate their token via configure.
+existing_provider = config.get('providers', {}).get(provider_key, {})
+if existing_provider.get('env') is not None:
+    provider_conf['env'] = existing_provider['env']
+if not headers and existing_provider.get('custom_headers') is not None:
+    provider_conf['custom_headers'] = existing_provider['custom_headers']
+
 config.setdefault('version', 1)
 config['default_provider'] = provider_key
 config.setdefault('providers', {})[provider_key] = provider_conf

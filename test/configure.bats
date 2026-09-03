@@ -172,3 +172,44 @@ d = json.load(open('$TEST_HOME/.config/claude-overlay/config.json'))
 assert 'my-workspace.cloud.databricks.com' in d['providers']['databricks']['base_url']
 "
 }
+
+@test "configure preserves provider env block on re-run" {
+  # Regression: write_config did a full-replace, silently dropping any env
+  # block the user hand-added (e.g. CLAUDE_CODE_MAX_CONTEXT_TOKENS).
+  mkdir -p "$TEST_HOME/.config/claude-overlay"
+  cat > "$TEST_HOME/.config/claude-overlay/config.json" <<'EOF'
+{
+  "version": 1,
+  "default_provider": "databricks",
+  "providers": {
+    "databricks": {
+      "base_url": "https://old-workspace.cloud.databricks.com/serving-endpoints/anthropic",
+      "auth_token": "old-token",
+      "model": "databricks-claude-opus-4-7",
+      "opus_model": "databricks-claude-opus-4-7",
+      "sonnet_model": "databricks-claude-sonnet-4-6",
+      "haiku_model": "databricks-claude-haiku-4-5",
+      "custom_headers": "x-databricks-use-coding-agent-mode: true",
+      "env": {"CLAUDE_CODE_MAX_CONTEXT_TOKENS": "131072"}
+    }
+  }
+}
+EOF
+  chmod 600 "$TEST_HOME/.config/claude-overlay/config.json"
+
+  # Re-configure the same provider (new URL, rotating the token reference).
+  # DATABRICKS_TOKEN is set by set_test_env_vars in setup(), so the prompt
+  # shows "Use env:DATABRICKS_TOKEN? (Y/n)" — passing env:DATABRICKS_TOKEN
+  # is accepted as a direct env: reference.
+  printf '1\nhttps://test.cloud.databricks.com/serving-endpoints/anthropic\nenv:DATABRICKS_TOKEN\n1\n\n' | \
+    "$CLAUDE_OVERLAY" configure
+
+  python3 -c "
+import json
+d = json.load(open('$TEST_HOME/.config/claude-overlay/config.json'))
+p = d['providers']['databricks']
+assert 'env' in p, 'env block must survive configure re-run'
+assert p['env']['CLAUDE_CODE_MAX_CONTEXT_TOKENS'] == '131072', \
+    'env value must survive configure re-run, got: ' + str(p.get('env'))
+"
+}
