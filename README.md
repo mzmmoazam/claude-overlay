@@ -534,6 +534,10 @@ around it.
 }
 ```
 
+> **Note:** `http://127.0.0.1`, `http://localhost`, and `http://0.0.0.0` are
+> loopback addresses and are accepted regardless of provider name. Non-loopback
+> URLs must use `https://` (unless the provider is named `litellm` or `custom`).
+
 **Merge order** (later wins):
 
 1. The preset's `env` block (`lib/presets/<name>.json`).
