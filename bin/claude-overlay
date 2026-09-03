@@ -1077,6 +1077,7 @@ cmd_setup() {
   sonnet=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(c['resolved']['sonnet_model'])" "$config_json")
   haiku=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(c['resolved']['haiku_model'])" "$config_json")
   headers=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(c['resolved']['custom_headers'])" "$config_json")
+  extra_env_json=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(json.dumps(c['resolved'].get('extra_env', {})))" "$config_json")
 
   # Extract MCP servers and permissions as JSON strings
   local mcp_servers_json permissions_allow_json permissions_deny_json
@@ -1141,6 +1142,7 @@ for name, conf in servers.items():
   export _OV_MCP_SERVERS="$mcp_servers_json"
   export _OV_PERMISSIONS_ALLOW="$permissions_allow_json"
   export _OV_PERMISSIONS_DENY="$permissions_deny_json"
+  export _OV_EXTRA_ENV="$extra_env_json"
 
   result=$(py_engine create_overlay) || true
   if [ "$result" = "ok" ]; then
