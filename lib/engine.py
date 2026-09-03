@@ -187,10 +187,14 @@ def action_load_config():
         print("error:missing_base_url")
         sys.exit(1)
     if not resolved["base_url"].startswith("https://"):
-        # Allow http:// for local proxies (LiteLLM, custom)
-        if provider_name in ("litellm", "custom") and resolved["base_url"].startswith("http://"):
-            pass
-        else:
+        # Allow http:// for local proxies. Two cases:
+        #   (a) preset-named providers ("litellm", "custom") — any http:// URL
+        #   (b) any provider name — but only for loopback URLs (127.*, localhost, 0.0.0.0)
+        _base = resolved["base_url"]
+        _local_prefixes = ("http://127.", "http://localhost", "http://0.0.0.0")
+        _named_local = provider_name in ("litellm", "custom") and _base.startswith("http://")
+        _loopback = any(_base.startswith(p) for p in _local_prefixes)
+        if not (_named_local or _loopback):
             print("error:insecure_base_url")
             sys.exit(1)
     if not resolved["auth_token"]:

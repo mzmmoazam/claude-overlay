@@ -204,3 +204,67 @@ expected_keys = {
 assert set(env.keys()) == expected_keys, sorted(set(env.keys()) ^ expected_keys)
 "
 }
+
+@test "loopback http:// URL works with any provider name" {
+  # Regression fence for a bug caught in local E2E validation: the http://
+  # allowlist used to be name-gated to "litellm" or "custom", blocking any
+  # user-defined provider from using a localhost URL. Loopback URLs are safe
+  # regardless of provider name.
+  mkdir -p "$TEST_HOME/.config/claude-overlay"
+  cat > "$TEST_HOME/.config/claude-overlay/config.json" <<'EOF'
+{
+  "version": 1,
+  "default_provider": "my-local",
+  "providers": {
+    "my-local": {
+      "base_url": "http://127.0.0.1:4000",
+      "auth_token": "sk-test",
+      "model": "test-model",
+      "opus_model": "test-model",
+      "sonnet_model": "test-model",
+      "haiku_model": "test-model",
+      "env": {"CLAUDE_CODE_MAX_CONTEXT_TOKENS": "131072"}
+    }
+  }
+}
+EOF
+  chmod 600 "$TEST_HOME/.config/claude-overlay/config.json"
+
+  run "$CLAUDE_OVERLAY" setup -y
+  [ "$status" -eq 0 ]
+
+  python3 -c "
+import json
+s = json.load(open('.claude/settings.local.json'))
+assert s['env']['ANTHROPIC_MODEL'] == 'test-model'
+assert s['env']['ANTHROPIC_BASE_URL'] == 'http://127.0.0.1:4000'
+assert s['env']['CLAUDE_CODE_MAX_CONTEXT_TOKENS'] == '131072'
+"
+}
+
+@test "non-loopback http:// URL still rejected for custom-named providers" {
+  # Ensures the fix is narrow: only loopback URLs get the pass. A non-loopback
+  # http:// URL from a custom-named provider must still fail closed.
+  mkdir -p "$TEST_HOME/.config/claude-overlay"
+  cat > "$TEST_HOME/.config/claude-overlay/config.json" <<'EOF'
+{
+  "version": 1,
+  "default_provider": "my-remote",
+  "providers": {
+    "my-remote": {
+      "base_url": "http://example.com/api",
+      "auth_token": "sk-test",
+      "model": "test-model",
+      "opus_model": "test-model",
+      "sonnet_model": "test-model",
+      "haiku_model": "test-model"
+    }
+  }
+}
+EOF
+  chmod 600 "$TEST_HOME/.config/claude-overlay/config.json"
+
+  run "$CLAUDE_OVERLAY" setup -y
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"insecure_base_url"* ]]
+}
