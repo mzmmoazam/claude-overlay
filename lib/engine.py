@@ -169,6 +169,19 @@ def action_load_config():
         "custom_headers": provider.get("custom_headers", preset.get("env", {}).get("ANTHROPIC_CUSTOM_HEADERS", "")),
     }
 
+    # Merge env blocks: preset.env → provider.env, later wins.
+    # Hardcoded model/base_url/token/tier keys stay in `resolved` above and
+    # are re-applied last in create_overlay, so they always win over this.
+    extra_env = {}
+    extra_env.update(preset.get("env", {}))
+    extra_env.update(provider.get("env", {}))
+    for k, v in list(extra_env.items()):
+        if isinstance(v, str) and v.startswith("env:"):
+            extra_env[k] = resolve_token(v)
+        elif not isinstance(v, str):
+            extra_env[k] = str(v)
+    resolved["extra_env"] = extra_env
+
     # Validate
     if not resolved["base_url"]:
         print("error:missing_base_url")
