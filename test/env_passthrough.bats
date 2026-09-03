@@ -414,3 +414,83 @@ EOF
   [ "$status" -ne 0 ]
   [[ "$output" == *"env_value_null"* ]]
 }
+
+@test "cloudflare preset: ANTHROPIC_CUSTOM_HEADERS absent from emit (regression fence)" {
+  # cloudflare preset has no ANTHROPIC_CUSTOM_HEADERS — the key must NOT appear
+  # in settings.local.json (pre-PR it would emit an empty string).
+  mkdir -p "$TEST_HOME/.config/claude-overlay"
+  cat > "$TEST_HOME/.config/claude-overlay/config.json" <<'EOF'
+{
+  "version": 1,
+  "default_provider": "cloudflare",
+  "providers": {
+    "cloudflare": {
+      "base_url": "https://gateway.ai.cloudflare.com/v1/acct123/gw123/anthropic",
+      "auth_token": "sk-ant-test",
+      "model": "claude-sonnet-4-6",
+      "opus_model": "claude-opus-4-7",
+      "sonnet_model": "claude-sonnet-4-6",
+      "haiku_model": "claude-haiku-4-5"
+    }
+  }
+}
+EOF
+  chmod 600 "$TEST_HOME/.config/claude-overlay/config.json"
+
+  run "$CLAUDE_OVERLAY" setup -y
+  [ "$status" -eq 0 ]
+
+  python3 -c "
+import json
+s = json.load(open('.claude/settings.local.json'))
+env = s['env']
+assert 'ANTHROPIC_CUSTOM_HEADERS' not in env, \
+    'cloudflare has no custom_headers — key must be absent, got: ' + str(env.get('ANTHROPIC_CUSTOM_HEADERS'))
+# Required keys must be present
+for k in ('ANTHROPIC_MODEL', 'ANTHROPIC_BASE_URL', 'ANTHROPIC_AUTH_TOKEN',
+          'ANTHROPIC_DEFAULT_OPUS_MODEL', 'ANTHROPIC_DEFAULT_SONNET_MODEL',
+          'ANTHROPIC_DEFAULT_HAIKU_MODEL', 'CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS'):
+    assert k in env, f'{k} must be present for cloudflare preset'
+"
+}
+
+@test "bedrock-gateway preset: required keys present, custom headers absent (regression fence)" {
+  # bedrock-gateway preset carries specific model names and no custom_headers.
+  mkdir -p "$TEST_HOME/.config/claude-overlay"
+  cat > "$TEST_HOME/.config/claude-overlay/config.json" <<'EOF'
+{
+  "version": 1,
+  "default_provider": "bedrock-gateway",
+  "providers": {
+    "bedrock-gateway": {
+      "base_url": "https://bedrock-gw.corp.example.com",
+      "auth_token": "sk-test",
+      "model": "us.anthropic.claude-opus-4-7-v1",
+      "opus_model": "us.anthropic.claude-opus-4-7-v1",
+      "sonnet_model": "us.anthropic.claude-sonnet-4-6",
+      "haiku_model": "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    }
+  }
+}
+EOF
+  chmod 600 "$TEST_HOME/.config/claude-overlay/config.json"
+
+  run "$CLAUDE_OVERLAY" setup -y
+  [ "$status" -eq 0 ]
+
+  python3 -c "
+import json
+s = json.load(open('.claude/settings.local.json'))
+env = s['env']
+assert 'ANTHROPIC_CUSTOM_HEADERS' not in env, \
+    'bedrock-gateway has no custom_headers — key must be absent'
+assert env.get('ANTHROPIC_MODEL') == 'us.anthropic.claude-opus-4-7-v1', env
+assert env.get('ANTHROPIC_DEFAULT_HAIKU_MODEL') == 'us.anthropic.claude-haiku-4-5-20251001-v1:0', env
+assert env.get('CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS') == '1', env
+# Required keys must be present
+for k in ('ANTHROPIC_MODEL', 'ANTHROPIC_BASE_URL', 'ANTHROPIC_AUTH_TOKEN',
+          'ANTHROPIC_DEFAULT_OPUS_MODEL', 'ANTHROPIC_DEFAULT_SONNET_MODEL',
+          'ANTHROPIC_DEFAULT_HAIKU_MODEL', 'CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS'):
+    assert k in env, f'{k} must be present for bedrock-gateway preset'
+"
+}

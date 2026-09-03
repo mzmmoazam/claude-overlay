@@ -570,8 +570,14 @@ usually sit under 200k. Users on a larger local model (Claude via LiteLLM at
 own `env` block.
 
 **Empty strings are dropped.** `"env": {"SOME_VAR": ""}` will NOT emit
-`SOME_VAR=""` — the key is skipped entirely. Same behavior as absent
-`custom_headers` and empty tier defaults.
+`SOME_VAR=""` — the key is skipped entirely. This behavior also applies
+to the fixed provider keys (`ANTHROPIC_CUSTOM_HEADERS`, tier-default
+models): a preset or provider that leaves them unset no longer emits
+`ANTHROPIC_CUSTOM_HEADERS: ""` into `.claude/settings.local.json`.
+This is a broadening from pre-PR behavior (previously all 8 hardcoded
+keys were always emitted, including empty strings). If your own tooling
+reads the overlay's `env` block by exact key presence rather than
+`.get()`, migrate to `.get()` — the emitted keyset is now sparser.
 
 ## MCP Web Search Servers
 
