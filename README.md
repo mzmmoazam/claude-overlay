@@ -501,6 +501,84 @@ All sensitive files are created with `chmod 600` and added to `.gitignore`.
 
 The `env:` prefix tells claude-overlay to read the value from the named environment variable at runtime. This keeps secrets out of config files and version control.
 
+### Per-provider environment variables
+
+Each provider can carry an optional `env` block that flows arbitrary environment
+variables into `.claude/settings.local.json`. Use it for any Claude Code
+tunable that doesn't have a dedicated overlay field.
+
+The killer use case is `CLAUDE_CODE_MAX_CONTEXT_TOKENS` for local-model
+providers. Claude Code assumes a 200k context window for unknown models, so it
+plans auto-compaction accordingly. A local model with a 131k window (GLM,
+most Llama 3.1 builds, Mixtral) will hit a hard `400 ContextWindowExceededError`
+long before compaction fires. Set the real window and compaction plans
+around it.
+
+```json
+{
+  "version": 1,
+  "default_provider": "glm",
+  "providers": {
+    "glm": {
+      "base_url": "http://127.0.0.1:4000",
+      "auth_token": "env:LITELLM_TOKEN",
+      "model": "glm-fast",
+      "opus_model": "glm-fast",
+      "sonnet_model": "glm-fast",
+      "haiku_model": "glm-fast",
+      "env": {
+        "CLAUDE_CODE_MAX_CONTEXT_TOKENS": "131072"
+      }
+    }
+  }
+}
+```
+
+> **Note:** `http://127.0.0.1`, `http://localhost`, and `http://0.0.0.0` are
+> loopback addresses and are accepted regardless of provider name. Non-loopback
+> URLs must use `https://` (unless the provider is named `litellm` or `custom`).
+
+**Merge order** (later wins):
+
+1. The preset's `env` block (`lib/presets/<name>.json`).
+2. The provider's `env` block in your config.
+3. Hardcoded fields from the fixed provider config
+   (`ANTHROPIC_MODEL`, `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`, the three
+   `ANTHROPIC_DEFAULT_*_MODEL` tiers, `ANTHROPIC_CUSTOM_HEADERS`, and
+   `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS`).
+
+Hardcoded keys always win — you cannot override `ANTHROPIC_MODEL` or the base
+URL from the free-form block. This is deliberate: the overlay is the source of
+truth for routing.
+
+**Secrets:** the `env:VAR_NAME` shortcut works inside the block too. Values are
+resolved at `setup` time using your shell environment:
+
+```json
+"env": {
+  "MY_CUSTOM_TOKEN": "env:MY_SHELL_VAR"
+}
+```
+
+If `MY_SHELL_VAR` is unset, `setup` fails with the same error path as an unset
+`auth_token` — the value never lands with an empty string.
+
+**Preset defaults:** the `litellm` preset ships with
+`CLAUDE_CODE_MAX_CONTEXT_TOKENS: "131072"` because local-model backends
+usually sit under 200k. Users on a larger local model (Claude via LiteLLM at
+200k, a rope-extended Llama at 256k) override the value in their provider's
+own `env` block.
+
+**Empty strings are dropped.** `"env": {"SOME_VAR": ""}` will NOT emit
+`SOME_VAR=""` — the key is skipped entirely. This behavior also applies
+to the fixed provider keys (`ANTHROPIC_CUSTOM_HEADERS`, tier-default
+models): a preset or provider that leaves them unset no longer emits
+`ANTHROPIC_CUSTOM_HEADERS: ""` into `.claude/settings.local.json`.
+This is a broadening from pre-PR behavior (previously all 8 hardcoded
+keys were always emitted, including empty strings). If your own tooling
+reads the overlay's `env` block by exact key presence rather than
+`.get()`, migrate to `.get()` — the emitted keyset is now sparser.
+
 ## MCP Web Search Servers
 
 `claude-overlay` configures two complementary search providers:

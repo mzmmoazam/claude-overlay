@@ -339,6 +339,16 @@ if os.path.isfile(path):
     except (json.JSONDecodeError, OSError):
         config = {}
 
+# Preserve user-edited fields that configure never re-prompts for.
+# A full-replace would silently drop an env block the user added to
+# unlock features (e.g. CLAUDE_CODE_MAX_CONTEXT_TOKENS) whenever they
+# rotate their token via configure.
+existing_provider = config.get('providers', {}).get(provider_key, {})
+if existing_provider.get('env') is not None:
+    provider_conf['env'] = existing_provider['env']
+if not headers and existing_provider.get('custom_headers') is not None:
+    provider_conf['custom_headers'] = existing_provider['custom_headers']
+
 config.setdefault('version', 1)
 config['default_provider'] = provider_key
 config.setdefault('providers', {})[provider_key] = provider_conf
@@ -1077,9 +1087,9 @@ cmd_setup() {
   sonnet=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(c['resolved']['sonnet_model'])" "$config_json")
   haiku=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(c['resolved']['haiku_model'])" "$config_json")
   headers=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(c['resolved']['custom_headers'])" "$config_json")
-
-  # Extract MCP servers and permissions as JSON strings
-  local mcp_servers_json permissions_allow_json permissions_deny_json
+  # Extract MCP servers, permissions, and extra env as JSON strings
+  local mcp_servers_json permissions_allow_json permissions_deny_json extra_env_json
+  extra_env_json=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(json.dumps(c['resolved'].get('extra_env', {})))" "$config_json")
   mcp_servers_json=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(json.dumps(c['mcp_servers']))" "$config_json")
   permissions_allow_json=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(json.dumps(c['permissions_allow']))" "$config_json")
   permissions_deny_json=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(json.dumps(c['permissions_deny']))" "$config_json")
@@ -1141,6 +1151,7 @@ for name, conf in servers.items():
   export _OV_MCP_SERVERS="$mcp_servers_json"
   export _OV_PERMISSIONS_ALLOW="$permissions_allow_json"
   export _OV_PERMISSIONS_DENY="$permissions_deny_json"
+  export _OV_EXTRA_ENV="$extra_env_json"
 
   result=$(py_engine create_overlay) || true
   if [ "$result" = "ok" ]; then

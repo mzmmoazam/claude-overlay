@@ -43,6 +43,12 @@ HOME_CLAUDE_JSON = os.path.join(os.path.expanduser("~"), ".claude.json")
 
 DEBUG = os.environ.get("CLAUDE_OVERLAY_DEBUG", "") == "1"
 
+# Anchored loopback regex — matches only genuine RFC-1918/loopback addresses.
+# Rejects look-alikes like http://localhost.run/... and http://127.dns.tld/.
+_LOOPBACK_RE = re.compile(
+    r"^http://(127\.\d{1,3}\.\d{1,3}\.\d{1,3}|localhost|0\.0\.0\.0|\[::1\])(:\d+)?(/|$)"
+)
+
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -134,6 +140,27 @@ def mask_token(value):
     return value[:6] + "****"
 
 
+_SENTINEL = object()
+
+
+def _coerce_env_block(source, label):
+    """Return a flat dict from source['env'], or exit with a clean error.
+
+    - Key absent → return {} (fine, nothing to merge).
+    - Key present with null (None) → error: callers cannot distinguish
+      "intentionally null" from "accidentally null"; fail closed.
+    - Key present with non-dict (list, string, scalar) → error.
+    - Key present with dict → return the dict.
+    """
+    raw = source.get("env", _SENTINEL)
+    if raw is _SENTINEL:
+        return {}
+    if raw is None or not isinstance(raw, dict):
+        print(f"error:{label}_env_not_object")
+        sys.exit(1)
+    return raw
+
+
 # ── ACTION: load_config ────────────────────────────────────────────────────
 
 def action_load_config():
@@ -169,15 +196,39 @@ def action_load_config():
         "custom_headers": provider.get("custom_headers", preset.get("env", {}).get("ANTHROPIC_CUSTOM_HEADERS", "")),
     }
 
+    # Merge env blocks: preset.env → provider.env, later wins.
+    # Hardcoded model/base_url/token/tier keys stay in `resolved` above and
+    # are re-applied last in create_overlay, so they always win over this.
+    extra_env = {}
+    extra_env.update(_coerce_env_block(preset, "preset"))
+    extra_env.update(_coerce_env_block(provider, "provider"))
+    for k, v in list(extra_env.items()):
+        if v is None:
+            print(f"error:env_value_null:{k}")
+            sys.exit(1)
+        if isinstance(v, (dict, list)):
+            print(f"error:env_value_not_scalar:{k}")
+            sys.exit(1)
+        if isinstance(v, str) and v.startswith("env:"):
+            extra_env[k] = resolve_token(v)
+        elif isinstance(v, bool):
+            extra_env[k] = "true" if v else "false"
+        elif not isinstance(v, str):
+            extra_env[k] = str(v)
+    resolved["extra_env"] = extra_env
+
     # Validate
     if not resolved["base_url"]:
         print("error:missing_base_url")
         sys.exit(1)
     if not resolved["base_url"].startswith("https://"):
-        # Allow http:// for local proxies (LiteLLM, custom)
-        if provider_name in ("litellm", "custom") and resolved["base_url"].startswith("http://"):
-            pass
-        else:
+        # Allow http:// for local proxies. Two cases:
+        #   (a) preset-named providers ("litellm", "custom") — any http:// URL
+        #   (b) any provider name — but only for loopback URLs (127.*, localhost, 0.0.0.0)
+        _base = resolved["base_url"]
+        _named_local = provider_name in ("litellm", "custom") and _base.startswith("http://")
+        _loopback = bool(_LOOPBACK_RE.match(_base))
+        if not (_named_local or _loopback):
             print("error:insecure_base_url")
             sys.exit(1)
     if not resolved["auth_token"]:
@@ -305,20 +356,43 @@ def action_create_overlay():
         "WebFetch"
     ]
 
+    extra_env_json = os.environ.get("_OV_EXTRA_ENV", "")
+    try:
+        extra_env = json.loads(extra_env_json) if extra_env_json else {}
+    except json.JSONDecodeError:
+        print("error:invalid_extra_env_json")
+        sys.exit(1)
+    if not isinstance(extra_env, dict):
+        print("error:extra_env_not_object")
+        sys.exit(1)
+
+    # Hardcoded keys always win — they layer on top of extra_env.
+    # Empty-string values are dropped so absent tier defaults don't emit
+    # empty settings.
+    hardcoded_env = {
+        "ANTHROPIC_MODEL": os.environ.get("_OV_MODEL", ""),
+        "ANTHROPIC_BASE_URL": os.environ.get("_OV_BASE_URL", ""),
+        "ANTHROPIC_AUTH_TOKEN": os.environ.get("_OV_AUTH_TOKEN", ""),
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": os.environ.get("_OV_OPUS", ""),
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": os.environ.get("_OV_SONNET", ""),
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": os.environ.get("_OV_HAIKU", ""),
+        "ANTHROPIC_CUSTOM_HEADERS": os.environ.get("_OV_HEADERS", ""),
+        "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1",
+    }
+
+    merged_env = {}
+    for k, v in extra_env.items():
+        if v != "":
+            merged_env[str(k)] = str(v)
+    for k, v in hardcoded_env.items():
+        if v != "":
+            merged_env[k] = v
+
     overlay = {
-        "env": {
-            "ANTHROPIC_MODEL": os.environ.get("_OV_MODEL", ""),
-            "ANTHROPIC_BASE_URL": os.environ.get("_OV_BASE_URL", ""),
-            "ANTHROPIC_AUTH_TOKEN": os.environ.get("_OV_AUTH_TOKEN", ""),
-            "ANTHROPIC_DEFAULT_OPUS_MODEL": os.environ.get("_OV_OPUS", ""),
-            "ANTHROPIC_DEFAULT_SONNET_MODEL": os.environ.get("_OV_SONNET", ""),
-            "ANTHROPIC_DEFAULT_HAIKU_MODEL": os.environ.get("_OV_HAIKU", ""),
-            "ANTHROPIC_CUSTOM_HEADERS": os.environ.get("_OV_HEADERS", ""),
-            "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1"
-        },
+        "env": merged_env,
         "permissions_allow": permissions_allow,
         "permissions_deny": permissions_deny,
-        "mcpServers": mcp_servers
+        "mcpServers": mcp_servers,
     }
     save(OVERLAY, overlay)
     print("ok")

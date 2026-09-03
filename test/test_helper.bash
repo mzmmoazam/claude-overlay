@@ -119,3 +119,44 @@ set_test_env_vars_openrouter() {
   export OPENROUTER_API_KEY="sk-or-test-key-12345"
   export TAVILY_API_KEY="tvly-test-key-12345"
 }
+
+# Write a config with a provider that carries an `env` block, for env-
+# passthrough tests. Uses OpenRouter-shaped fixed fields (no headers) so
+# nothing collides with hardcoded keys we're not exercising here.
+write_test_config_with_env() {
+  local _default_env='{"CLAUDE_CODE_MAX_CONTEXT_TOKENS": "131072"}'
+  local extra_env_json="${1:-$_default_env}"
+  local config_dir="$TEST_HOME/.config/claude-overlay"
+  mkdir -p "$config_dir"
+  cat > "$config_dir/config.json" <<EOF
+{
+  "version": 1,
+  "default_provider": "envtest",
+  "providers": {
+    "envtest": {
+      "base_url": "https://example.com/api",
+      "auth_token": "env:ENVTEST_TOKEN",
+      "model": "test-model",
+      "opus_model": "test-model",
+      "sonnet_model": "test-model",
+      "haiku_model": "test-model",
+      "env": ${extra_env_json}
+    }
+  },
+  "mcp_servers": {
+    "tavily": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "tavily-mcp@0.2.18"],
+      "env": {"TAVILY_API_KEY": "env:TAVILY_API_KEY"}
+    }
+  }
+}
+EOF
+  chmod 600 "$config_dir/config.json"
+}
+
+set_test_env_vars_envtest() {
+  export ENVTEST_TOKEN="env-test-token-12345"
+  export TAVILY_API_KEY="tvly-test-key-12345"
+}

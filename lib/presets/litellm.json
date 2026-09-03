@@ -1,7 +1,9 @@
 {
   "name": "litellm",
   "description": "LiteLLM proxy server for Claude models",
-  "env": {},
+  "env": {
+    "CLAUDE_CODE_MAX_CONTEXT_TOKENS": "131072"
+  },
   "permissions_allow": [
     "mcp__tavily__tavily_search",
     "mcp__tavily__tavily_research",
