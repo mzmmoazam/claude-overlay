@@ -140,6 +140,27 @@ def mask_token(value):
     return value[:6] + "****"
 
 
+_SENTINEL = object()
+
+
+def _coerce_env_block(source, label):
+    """Return a flat dict from source['env'], or exit with a clean error.
+
+    - Key absent → return {} (fine, nothing to merge).
+    - Key present with null (None) → error: callers cannot distinguish
+      "intentionally null" from "accidentally null"; fail closed.
+    - Key present with non-dict (list, string, scalar) → error.
+    - Key present with dict → return the dict.
+    """
+    raw = source.get("env", _SENTINEL)
+    if raw is _SENTINEL:
+        return {}
+    if raw is None or not isinstance(raw, dict):
+        print(f"error:{label}_env_not_object")
+        sys.exit(1)
+    return raw
+
+
 # ── ACTION: load_config ────────────────────────────────────────────────────
 
 def action_load_config():
@@ -179,11 +200,19 @@ def action_load_config():
     # Hardcoded model/base_url/token/tier keys stay in `resolved` above and
     # are re-applied last in create_overlay, so they always win over this.
     extra_env = {}
-    extra_env.update(preset.get("env", {}))
-    extra_env.update(provider.get("env", {}))
+    extra_env.update(_coerce_env_block(preset, "preset"))
+    extra_env.update(_coerce_env_block(provider, "provider"))
     for k, v in list(extra_env.items()):
+        if v is None:
+            print(f"error:env_value_null:{k}")
+            sys.exit(1)
+        if isinstance(v, (dict, list)):
+            print(f"error:env_value_not_scalar:{k}")
+            sys.exit(1)
         if isinstance(v, str) and v.startswith("env:"):
             extra_env[k] = resolve_token(v)
+        elif isinstance(v, bool):
+            extra_env[k] = "true" if v else "false"
         elif not isinstance(v, str):
             extra_env[k] = str(v)
     resolved["extra_env"] = extra_env

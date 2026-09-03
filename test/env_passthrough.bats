@@ -310,3 +310,107 @@ assert s['env']['ANTHROPIC_BASE_URL'] == 'http://[::1]:4000'
 assert s['env']['CLAUDE_CODE_MAX_CONTEXT_TOKENS'] == '65536'
 "
 }
+
+@test "env: null on provider fails with clean error" {
+  mkdir -p "$TEST_HOME/.config/claude-overlay"
+  cat > "$TEST_HOME/.config/claude-overlay/config.json" <<'EOF'
+{
+  "version": 1,
+  "default_provider": "envtest",
+  "providers": {
+    "envtest": {
+      "base_url": "https://example.com/api",
+      "auth_token": "sk-test",
+      "model": "test-model",
+      "opus_model": "test-model",
+      "sonnet_model": "test-model",
+      "haiku_model": "test-model",
+      "env": null
+    }
+  }
+}
+EOF
+  chmod 600 "$TEST_HOME/.config/claude-overlay/config.json"
+
+  run "$CLAUDE_OVERLAY" setup -y
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"provider_env_not_object"* ]]
+}
+
+@test "env: [] on provider fails with clean error" {
+  mkdir -p "$TEST_HOME/.config/claude-overlay"
+  cat > "$TEST_HOME/.config/claude-overlay/config.json" <<'EOF'
+{
+  "version": 1,
+  "default_provider": "envtest",
+  "providers": {
+    "envtest": {
+      "base_url": "https://example.com/api",
+      "auth_token": "sk-test",
+      "model": "test-model",
+      "opus_model": "test-model",
+      "sonnet_model": "test-model",
+      "haiku_model": "test-model",
+      "env": []
+    }
+  }
+}
+EOF
+  chmod 600 "$TEST_HOME/.config/claude-overlay/config.json"
+
+  run "$CLAUDE_OVERLAY" setup -y
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"provider_env_not_object"* ]]
+}
+
+@test "env: string on provider fails with clean error" {
+  mkdir -p "$TEST_HOME/.config/claude-overlay"
+  cat > "$TEST_HOME/.config/claude-overlay/config.json" <<'EOF'
+{
+  "version": 1,
+  "default_provider": "envtest",
+  "providers": {
+    "envtest": {
+      "base_url": "https://example.com/api",
+      "auth_token": "sk-test",
+      "model": "test-model",
+      "opus_model": "test-model",
+      "sonnet_model": "test-model",
+      "haiku_model": "test-model",
+      "env": "not-an-object"
+    }
+  }
+}
+EOF
+  chmod 600 "$TEST_HOME/.config/claude-overlay/config.json"
+
+  run "$CLAUDE_OVERLAY" setup -y
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"provider_env_not_object"* ]]
+}
+
+@test "env value null fails with clean error" {
+  mkdir -p "$TEST_HOME/.config/claude-overlay"
+  cat > "$TEST_HOME/.config/claude-overlay/config.json" <<'EOF'
+{
+  "version": 1,
+  "default_provider": "envtest",
+  "providers": {
+    "envtest": {
+      "base_url": "https://example.com/api",
+      "auth_token": "sk-test",
+      "model": "test-model",
+      "opus_model": "test-model",
+      "sonnet_model": "test-model",
+      "haiku_model": "test-model",
+      "env": {"MY_FLAG": null}
+    }
+  }
+}
+EOF
+  chmod 600 "$TEST_HOME/.config/claude-overlay/config.json"
+
+  run "$CLAUDE_OVERLAY" setup -y
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"env_value_null"* ]]
+}
