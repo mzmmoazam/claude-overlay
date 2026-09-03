@@ -318,20 +318,43 @@ def action_create_overlay():
         "WebFetch"
     ]
 
+    extra_env_json = os.environ.get("_OV_EXTRA_ENV", "")
+    try:
+        extra_env = json.loads(extra_env_json) if extra_env_json else {}
+    except json.JSONDecodeError:
+        print("error:invalid_extra_env_json")
+        sys.exit(1)
+    if not isinstance(extra_env, dict):
+        print("error:extra_env_not_object")
+        sys.exit(1)
+
+    # Hardcoded keys always win — they layer on top of extra_env.
+    # Empty-string values are dropped so absent tier defaults don't emit
+    # empty settings.
+    hardcoded_env = {
+        "ANTHROPIC_MODEL": os.environ.get("_OV_MODEL", ""),
+        "ANTHROPIC_BASE_URL": os.environ.get("_OV_BASE_URL", ""),
+        "ANTHROPIC_AUTH_TOKEN": os.environ.get("_OV_AUTH_TOKEN", ""),
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": os.environ.get("_OV_OPUS", ""),
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": os.environ.get("_OV_SONNET", ""),
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": os.environ.get("_OV_HAIKU", ""),
+        "ANTHROPIC_CUSTOM_HEADERS": os.environ.get("_OV_HEADERS", ""),
+        "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1",
+    }
+
+    merged_env = {}
+    for k, v in extra_env.items():
+        if v != "":
+            merged_env[str(k)] = str(v)
+    for k, v in hardcoded_env.items():
+        if v != "":
+            merged_env[k] = v
+
     overlay = {
-        "env": {
-            "ANTHROPIC_MODEL": os.environ.get("_OV_MODEL", ""),
-            "ANTHROPIC_BASE_URL": os.environ.get("_OV_BASE_URL", ""),
-            "ANTHROPIC_AUTH_TOKEN": os.environ.get("_OV_AUTH_TOKEN", ""),
-            "ANTHROPIC_DEFAULT_OPUS_MODEL": os.environ.get("_OV_OPUS", ""),
-            "ANTHROPIC_DEFAULT_SONNET_MODEL": os.environ.get("_OV_SONNET", ""),
-            "ANTHROPIC_DEFAULT_HAIKU_MODEL": os.environ.get("_OV_HAIKU", ""),
-            "ANTHROPIC_CUSTOM_HEADERS": os.environ.get("_OV_HEADERS", ""),
-            "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1"
-        },
+        "env": merged_env,
         "permissions_allow": permissions_allow,
         "permissions_deny": permissions_deny,
-        "mcpServers": mcp_servers
+        "mcpServers": mcp_servers,
     }
     save(OVERLAY, overlay)
     print("ok")
