@@ -43,6 +43,12 @@ HOME_CLAUDE_JSON = os.path.join(os.path.expanduser("~"), ".claude.json")
 
 DEBUG = os.environ.get("CLAUDE_OVERLAY_DEBUG", "") == "1"
 
+# Anchored loopback regex — matches only genuine RFC-1918/loopback addresses.
+# Rejects look-alikes like http://localhost.run/... and http://127.dns.tld/.
+_LOOPBACK_RE = re.compile(
+    r"^http://(127\.\d{1,3}\.\d{1,3}\.\d{1,3}|localhost|0\.0\.0\.0|\[::1\])(:\d+)?(/|$)"
+)
+
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -191,9 +197,8 @@ def action_load_config():
         #   (a) preset-named providers ("litellm", "custom") — any http:// URL
         #   (b) any provider name — but only for loopback URLs (127.*, localhost, 0.0.0.0)
         _base = resolved["base_url"]
-        _local_prefixes = ("http://127.", "http://localhost", "http://0.0.0.0")
         _named_local = provider_name in ("litellm", "custom") and _base.startswith("http://")
-        _loopback = any(_base.startswith(p) for p in _local_prefixes)
+        _loopback = bool(_LOOPBACK_RE.match(_base))
         if not (_named_local or _loopback):
             print("error:insecure_base_url")
             sys.exit(1)

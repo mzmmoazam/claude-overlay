@@ -245,14 +245,23 @@ assert s['env']['CLAUDE_CODE_MAX_CONTEXT_TOKENS'] == '131072'
 @test "non-loopback http:// URL still rejected for custom-named providers" {
   # Ensures the fix is narrow: only loopback URLs get the pass. A non-loopback
   # http:// URL from a custom-named provider must still fail closed.
-  mkdir -p "$TEST_HOME/.config/claude-overlay"
-  cat > "$TEST_HOME/.config/claude-overlay/config.json" <<'EOF'
+  # Also covers regex-bypass look-alikes: localhost.run (public tunnel service),
+  # 127.dns.tld, and localhostile.example.com (F1/F2 review findings).
+  local -a bad_urls=(
+    "http://example.com/api"
+    "http://localhost.run/api"
+    "http://127.example.com/api"
+    "http://localhostile.example.com/api"
+  )
+  for url in "${bad_urls[@]}"; do
+    mkdir -p "$TEST_HOME/.config/claude-overlay"
+    cat > "$TEST_HOME/.config/claude-overlay/config.json" <<EOF
 {
   "version": 1,
   "default_provider": "my-remote",
   "providers": {
     "my-remote": {
-      "base_url": "http://example.com/api",
+      "base_url": "$url",
       "auth_token": "sk-test",
       "model": "test-model",
       "opus_model": "test-model",
@@ -262,9 +271,42 @@ assert s['env']['CLAUDE_CODE_MAX_CONTEXT_TOKENS'] == '131072'
   }
 }
 EOF
+    chmod 600 "$TEST_HOME/.config/claude-overlay/config.json"
+    run "$CLAUDE_OVERLAY" setup -y
+    [ "$status" -ne 0 ] || { echo "FAIL: $url should have been rejected"; false; }
+    [[ "$output" == *"insecure_base_url"* ]] || { echo "FAIL: wrong error for $url"; false; }
+  done
+}
+
+@test "IPv6 loopback http://[::1] works with any provider name" {
+  # F3 (minor): IPv6 loopback was missing from the original allowlist.
+  mkdir -p "$TEST_HOME/.config/claude-overlay"
+  cat > "$TEST_HOME/.config/claude-overlay/config.json" <<'EOF'
+{
+  "version": 1,
+  "default_provider": "my-ipv6",
+  "providers": {
+    "my-ipv6": {
+      "base_url": "http://[::1]:4000",
+      "auth_token": "sk-test",
+      "model": "test-model",
+      "opus_model": "test-model",
+      "sonnet_model": "test-model",
+      "haiku_model": "test-model",
+      "env": {"CLAUDE_CODE_MAX_CONTEXT_TOKENS": "65536"}
+    }
+  }
+}
+EOF
   chmod 600 "$TEST_HOME/.config/claude-overlay/config.json"
 
   run "$CLAUDE_OVERLAY" setup -y
-  [ "$status" -ne 0 ]
-  [[ "$output" == *"insecure_base_url"* ]]
+  [ "$status" -eq 0 ]
+
+  python3 -c "
+import json
+s = json.load(open('.claude/settings.local.json'))
+assert s['env']['ANTHROPIC_BASE_URL'] == 'http://[::1]:4000'
+assert s['env']['CLAUDE_CODE_MAX_CONTEXT_TOKENS'] == '65536'
+"
 }
