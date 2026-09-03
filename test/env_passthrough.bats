@@ -164,6 +164,8 @@ json.dump(s, open('.claude/settings.local.json', 'w'), indent=2)
 
   python3 -c "
 import json, os
+assert os.path.exists('.claude/settings.local.json'), \
+    'file must survive because MY_UNRELATED_VAR was set'
 if os.path.exists('.claude/settings.local.json'):
     s = json.load(open('.claude/settings.local.json'))
     assert 'CLAUDE_CODE_MAX_CONTEXT_TOKENS' not in s.get('env', {}), 'managed key should be gone'
