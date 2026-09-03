@@ -1077,10 +1077,9 @@ cmd_setup() {
   sonnet=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(c['resolved']['sonnet_model'])" "$config_json")
   haiku=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(c['resolved']['haiku_model'])" "$config_json")
   headers=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(c['resolved']['custom_headers'])" "$config_json")
+  # Extract MCP servers, permissions, and extra env as JSON strings
+  local mcp_servers_json permissions_allow_json permissions_deny_json extra_env_json
   extra_env_json=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(json.dumps(c['resolved'].get('extra_env', {})))" "$config_json")
-
-  # Extract MCP servers and permissions as JSON strings
-  local mcp_servers_json permissions_allow_json permissions_deny_json
   mcp_servers_json=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(json.dumps(c['mcp_servers']))" "$config_json")
   permissions_allow_json=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(json.dumps(c['permissions_allow']))" "$config_json")
   permissions_deny_json=$(python3 -c "import json,sys; c=json.loads(sys.argv[1]); print(json.dumps(c['permissions_deny']))" "$config_json")
