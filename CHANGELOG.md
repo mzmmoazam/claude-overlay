@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.4.0] - 2026-09-03
+
+### Added
+- Per-provider `env: {}` block in `~/.config/claude-overlay/config.json`. Keys flow into `.claude/settings.local.json` via the existing `setup` / `enable` / `disable` machinery, so switching providers atomically switches their env vars. Motivating case: local-model users (GLM 5.2, Llama 3.1, Mixtral fronted by LiteLLM / vLLM / Ollama) sit at 128k–131k context windows but Claude Code assumes 200k for unknown models and plans auto-compaction accordingly. Without a `CLAUDE_CODE_MAX_CONTEXT_TOKENS` hint the session crashes at ~99k input tokens with a hard `400 ContextWindowExceededError`. The new `env` block lets you thread that value (and any other Claude Code env var) through the overlay's atomic switch machinery.
+- LiteLLM preset ships `CLAUDE_CODE_MAX_CONTEXT_TOKENS: "131072"` by default. Overridable per provider.
+- README section "Per-provider environment variables" documents the merge order (preset → provider → hardcoded, hardcoded wins on collision), `env:VAR_NAME` token-resolution shortcut for secrets, empty-string drop, and the loopback URL bypass.
+
+### Fixed
+- `http://` URL allowlist was hardcoded to provider names `"litellm"` and `"custom"`. Any other name (e.g. `"glm-only"`, `"my-vllm"`) pointing at `http://127.0.0.1` was rejected with `error:insecure_base_url` even though the URL was loopback. Broadened to any provider with a loopback URL (`127.*` / `localhost` / `0.0.0.0` / IPv6 `[::1]`), anchored with a compiled regex so `localhost.run` (a real public HTTP-tunneling service) and `127.dns-name.tld` cannot bypass by prefix-collision.
+- `configure` re-run on the same provider full-replaced the provider dict, silently wiping any user-added `env` block or hand-edited `custom_headers`. Now reads the existing provider first and preserves both fields if new values aren't provided. Prevents a UX regression that would have re-introduced the 131k crash the `env` feature exists to prevent.
+- Non-object `env` blocks (`env: null`, `env: []`, `env: "string"`) now fail closed with a clean `error:{preset|provider}_env_not_object` line instead of raising a raw Python `TypeError` / `ValueError`. Non-scalar values inside `env` (`env: {"K": null}`, dicts, lists) also fail closed rather than being coerced to strings like `"None"` or `"[1, 2]"` via `str()`. Booleans coerce to lowercase `"true"`/`"false"` (Claude Code convention), not Python's `"True"`/`"False"`.
+
+### Unchanged
+- Configs without any `env` block behave identically to v0.3.x — regression-fence test pins byte-equivalent overlay emit.
+- Provider names `"litellm"` and `"custom"` with any `http://` URL — still accepted (backward compat).
+- Schema `version: 1` — no bump; the feature is additive.
+
 ## [0.3.0] - 2026-05-14
 
 ### Changed
