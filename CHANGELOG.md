@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.1] - 2026-09-04
+
+### Added
+- `doctor` now checks local-proxy liveness. When a provider's `base_url` is a loopback address (`http://127.*` / `localhost` / `0.0.0.0` / IPv6 `[::1]`), `doctor` opens a 2-second TCP dial to the host:port and reports either `Local proxy at <host>:<port> reachable` (ok) or `Local proxy at <host>:<port> not responding — is your LiteLLM / vLLM / Ollama running?` (warn). Silent proxy death is a real failure mode for local-model users (the process crashes, the next Claude Code session dies with `error:insecure_base_url` or a connection-refused mid-request) and the overlay is the only tool that knows a given URL is expected to be a local proxy — Claude Code sees it as an arbitrary endpoint. The check is warn-only (never fails `doctor`), skipped for external URLs (HTTPS / non-loopback HTTP), and uses stdlib `socket` + `urllib.parse` — no new dependencies.
+
 ## [0.4.0] - 2026-09-03
 
 ### Added
