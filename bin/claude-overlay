@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-VERSION="0.4.0"
+VERSION="0.4.1"
 
 # ── Resolve paths (macOS-compatible, no readlink -f) ───────────────────────
 resolve_dir() {
@@ -1302,6 +1302,28 @@ if tavily:
         results.append({"id": 8, "level": "ok", "msg": "Tavily: key configured"})
     else:
         results.append({"id": 8, "level": "warn", "msg": "Tavily: no API key configured"})
+
+# Check 12: local proxy liveness (only for loopback base_urls — external endpoints
+# fail cleanly on the first request, so Claude Code surfaces them). Uses a 2s TCP
+# dial; reports port-open, not model-reachable, and never fails the check.
+import re, socket
+from urllib.parse import urlparse
+
+_LOOPBACK_RE = re.compile(
+    r'^http://(127\.\d{1,3}\.\d{1,3}\.\d{1,3}|localhost|0\.0\.0\.0|\[::1\])(:\d+)?(/|$)'
+)
+
+if base_url and _LOOPBACK_RE.match(base_url):
+    parsed = urlparse(base_url)
+    host = parsed.hostname or "localhost"
+    port = parsed.port or 80
+    try:
+        with socket.create_connection((host, port), timeout=2):
+            results.append({"id": 12, "level": "ok",
+                            "msg": f"Local proxy at {host}:{port} reachable"})
+    except (OSError, socket.timeout):
+        results.append({"id": 12, "level": "warn",
+                        "msg": f"Local proxy at {host}:{port} not responding — is your LiteLLM / vLLM / Ollama running?"})
 
 print(json.dumps(results))
 PYEOF

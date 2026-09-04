@@ -94,3 +94,84 @@ teardown() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"✗"*"malformed JSON"* ]]
 }
+
+@test "doctor warns when local proxy not responding at loopback base_url" {
+  # Loopback base_url on a port nothing is bound to → warn, not error
+  local config_dir="$TEST_HOME/.config/claude-overlay"
+  mkdir -p "$config_dir"
+  cat > "$config_dir/config.json" <<'EOF'
+{
+  "version": 1,
+  "default_provider": "glm-local",
+  "providers": {
+    "glm-local": {
+      "base_url": "http://127.0.0.1:49876",
+      "auth_token": "sk-test",
+      "model": "test-model",
+      "opus_model": "test-model",
+      "sonnet_model": "test-model",
+      "haiku_model": "test-model"
+    }
+  }
+}
+EOF
+  chmod 600 "$config_dir/config.json"
+
+  run "$CLAUDE_OVERLAY" doctor
+  # Doctor should still exit 0 — a down proxy is a warning, not an error
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Local proxy"*"127.0.0.1:49876"*"not responding"* ]]
+}
+
+@test "doctor reports local proxy reachable when a listener is bound" {
+  # Bind a real TCP listener on a loopback port, then verify doctor sees it
+  local PORT=49877
+  python3 -c "
+import socket, time
+s = socket.socket()
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind(('127.0.0.1', $PORT))
+s.listen(1)
+time.sleep(20)
+" &
+  local LISTENER_PID=$!
+  sleep 0.5
+
+  local config_dir="$TEST_HOME/.config/claude-overlay"
+  mkdir -p "$config_dir"
+  cat > "$config_dir/config.json" <<EOF
+{
+  "version": 1,
+  "default_provider": "glm-local",
+  "providers": {
+    "glm-local": {
+      "base_url": "http://127.0.0.1:$PORT",
+      "auth_token": "sk-test",
+      "model": "test-model",
+      "opus_model": "test-model",
+      "sonnet_model": "test-model",
+      "haiku_model": "test-model"
+    }
+  }
+}
+EOF
+  chmod 600 "$config_dir/config.json"
+
+  run "$CLAUDE_OVERLAY" doctor
+
+  kill $LISTENER_PID 2>/dev/null || true
+  wait $LISTENER_PID 2>/dev/null || true
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Local proxy"*"127.0.0.1:$PORT"*"reachable"* ]]
+}
+
+@test "doctor omits Local proxy check when base_url is HTTPS (non-loopback)" {
+  # HTTPS URL should never trigger the loopback check
+  write_test_config
+  set_test_env_vars
+  run "$CLAUDE_OVERLAY" doctor
+  [ "$status" -eq 0 ]
+  # Neither the reachable nor not-responding line should appear
+  [[ "$output" != *"Local proxy"* ]]
+}

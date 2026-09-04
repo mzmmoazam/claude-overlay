@@ -214,6 +214,8 @@ claude-overlay doctor
 
 > **First-run gate check**: Claude Code v2+ shows a welcome/login picker until `~/.claude.json` has `hasCompletedOnboarding: true` and `theme` set. `setup` and `enable` stamp these non-destructively, and `doctor` verifies them.
 
+> **Local proxy check**: for loopback base_urls (`http://127.*` / `localhost` / `[::1]`), `doctor` also probes the port with a 2-second TCP dial and warns if nothing is listening — useful when your LiteLLM / vLLM / Ollama proxy has died silently. External endpoints (HTTPS URLs, Cloudflare, Databricks) skip this check because Claude Code surfaces their failures on the first request.
+
 ## Provider Examples
 
 The config file lives at `~/.config/claude-overlay/config.json`. Below are examples for various providers. Each uses the `env:` prefix for secrets, which reads from environment variables at runtime so credentials never touch disk.
